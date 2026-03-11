@@ -259,11 +259,11 @@
 
     <!-- Discussion Preset Topics -->
     {#if chatState.chatMode === 'discussion' && chatState.messages.length === 0 && !chatState.isLoading}
-        <div class="flex flex-wrap gap-2 mb-3">
+        <div class="flex flex-wrap justify-center gap-1.5 mb-3">
             {#each DISCUSSION_PRESETS as preset}
                 <button
                     onclick={() => sendPreset(preset.prompt)}
-                    class="px-3 py-1.5 text-xs rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                    class="px-2.5 py-1 text-[11px] rounded border border-white/8 text-muted-foreground/50 hover:text-foreground/70 hover:border-white/15 transition-colors bg-transparent tracking-wide"
                 >
                     {preset.label}
                 </button>
@@ -273,11 +273,11 @@
 
     <!-- Research Preset Topics -->
     {#if chatState.chatMode === 'research' && chatState.messages.length === 0 && !chatState.isLoading}
-        <div class="flex flex-wrap gap-2 mb-3">
+        <div class="flex flex-wrap justify-center gap-1.5 mb-3">
             {#each RESEARCH_PRESETS as preset}
                 <button
                     onclick={() => sendPreset(preset.prompt)}
-                    class="px-3 py-1.5 text-xs rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                    class="px-2.5 py-1 text-[11px] rounded border border-white/8 text-muted-foreground/50 hover:text-foreground/70 hover:border-white/15 transition-colors bg-transparent tracking-wide"
                 >
                     {preset.label}
                 </button>
