@@ -11,20 +11,12 @@ export type ChatModelRuntime = {
 	clientBundle: ReturnType<typeof getClientForModel> | null;
 };
 
-export function resolveChatModelRuntime(
-	chatMode: ChatMode,
-	customBotDefaultModel?: string | null
-): ChatModelRuntime {
+export function resolveChatModelRuntime(chatMode: ChatMode): ChatModelRuntime {
 	const sharedModel = resolveDefaultAIModel();
 	const normalModel = isAIModel(env.NORMAL_AI_MODEL) ? env.NORMAL_AI_MODEL : sharedModel;
 	const agentModel = isAIModel(env.AGENT_AI_MODEL) ? env.AGENT_AI_MODEL : sharedModel;
 
-	const selectedModel =
-		customBotDefaultModel && isAIModel(customBotDefaultModel)
-			? customBotDefaultModel
-			: chatMode === 'agent'
-				? agentModel
-				: normalModel;
+	const selectedModel = chatMode === 'agent' ? agentModel : normalModel;
 
 	if (chatMode === 'discussion') {
 		const summary = describeDiscussionModels();

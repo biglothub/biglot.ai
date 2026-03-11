@@ -30,10 +30,13 @@ describe('resolveChatModelRuntime', () => {
 		expect(() => resolveChatModelRuntime('normal')).toThrow('OPENAI_API_KEY is not configured');
 	});
 
-	it('uses a valid custom bot model for non-discussion chat', () => {
-		setEnv({ MINIMAX_API_KEY: 'sk-minimax' });
+	it('uses the configured agent model for agent chat', () => {
+		setEnv({
+			MINIMAX_API_KEY: 'sk-minimax',
+			AGENT_AI_MODEL: 'minimax-m2.5'
+		});
 
-		const result = resolveChatModelRuntime('agent', 'minimax-m2.5');
+		const result = resolveChatModelRuntime('agent');
 
 		expect(result.selectedModel).toBe('minimax-m2.5');
 		expect(result.clientBundle?.provider).toBe('minimax');

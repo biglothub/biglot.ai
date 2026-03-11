@@ -1,9 +1,8 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { getSystemPrompt, getCustomBotSystemPrompt, normalizeAgentMode } from '$lib/agent/systemPrompts';
+import { getSystemPrompt, normalizeAgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
-import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin.server';
 import { checkRateLimit, RATE_LIMITS } from '$lib/server/rateLimiter.server';
 import { runAgentLoop } from '$lib/server/agentLoop.server';
 import { runDiscussionLoop } from '$lib/server/discussionLoop.server';
@@ -127,7 +126,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const chatId = typeof payload.chatId === 'string' ? payload.chatId : null;
 	const biglotUserId = typeof payload.biglotUserId === 'string' ? payload.biglotUserId : null;
-	const botId = typeof payload.botId === 'string' ? payload.botId : null;
 
 	const MAX_MESSAGES = 50;
 	const MAX_CHARS = 8000;
@@ -152,30 +150,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		)
 		.slice(-MAX_MESSAGES);
 
-	// Custom bot lookup (does not affect default flow when botId is absent)
-	let customBot: { system_prompt: string; tools: string[]; default_model: string | null } | null = null;
-	if (botId && biglotUserId) {
-		try {
-			const supabase = getSupabaseAdminClient();
-			const { data, error: botError } = await supabase
-				.from('custom_bots')
-				.select('system_prompt, tools, default_model, biglot_user_id')
-				.eq('id', botId)
-				.eq('is_active', true)
-				.single();
-
-			if (!botError && data && data.biglot_user_id === biglotUserId) {
-				customBot = { system_prompt: data.system_prompt, tools: data.tools ?? [], default_model: data.default_model };
-			}
-		} catch {
-			// If bot lookup fails, fall through to default behavior
-		}
-	}
-
 	const mode = normalizeAgentMode(payload.mode);
-	const chatMode = customBot
-		? 'agent' // Custom bots always use agent mode (tools enabled)
-		: payload.chatMode === 'agent'
+	const chatMode =
+		payload.chatMode === 'agent'
 			? 'agent'
 			: payload.chatMode === 'discussion'
 				? 'discussion'
@@ -197,15 +174,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const isDeepResearch = routeType === 'deep_research';
 	const planningEnabled = shouldEnablePlanning(chatMode, routeType);
 
-	// System prompt: custom bot or default mode
-	const systemPrompt = customBot
-		? getCustomBotSystemPrompt(customBot.system_prompt, customBot.tools, planningEnabled, isDeepResearch)
-		: getSystemPrompt(mode, planningEnabled, isDeepResearch);
+	const systemPrompt = getSystemPrompt(mode, planningEnabled, isDeepResearch);
 
-	const { selectedModel, runModelLabel, runProviderLabel, clientBundle } = resolveChatModelRuntime(
-		chatMode,
-		customBot?.default_model ?? null
-	);
+	const { selectedModel, runModelLabel, runProviderLabel, clientBundle } = resolveChatModelRuntime(chatMode);
 
 	if (env.BIGLOT_CHAT_ECHO_MODE === '1') {
 		return new Response(`Mode: ${mode}\nModel: ${runModelLabel}\n`, {
@@ -352,7 +323,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 							maxPlanSteps: isDeepResearch ? 10 : 6,
 							planningEnabled,
 							currentMode: mode,
-							allowedTools: customBot?.tools.length ? customBot.tools : undefined,
 							callbacks: {
 								onTextDelta: (text) => {
 									streamedText += text;

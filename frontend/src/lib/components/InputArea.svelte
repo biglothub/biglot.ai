@@ -16,7 +16,6 @@
     } from "lucide-svelte";
     import type { ChatMode, FileAttachment } from "$lib/state/chat.svelte";
     import { chatState } from "$lib/state/chat.svelte";
-    import { botState } from "$lib/state/bots.svelte";
     import { onMount } from "svelte";
 
     let input = $state("");
@@ -281,20 +280,6 @@
                     class="px-3 py-1.5 text-xs rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
                 >
                     {preset.label}
-                </button>
-            {/each}
-        </div>
-    {/if}
-
-    <!-- Custom Bot Conversation Starters -->
-    {#if botState.activeBot && botState.activeBot.conversation_starters.length > 0 && chatState.messages.length === 0 && !chatState.isLoading}
-        <div class="flex flex-wrap gap-2 mb-3">
-            {#each botState.activeBot.conversation_starters as starter}
-                <button
-                    onclick={() => sendPreset(starter)}
-                    class="px-3 py-1.5 text-xs rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                >
-                    {starter}
                 </button>
             {/each}
         </div>

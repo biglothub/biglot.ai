@@ -8,7 +8,6 @@ import type {
     PlanBlock,
     DiscussionBlock
 } from '$lib/types/contentBlock';
-import { botState } from './bots.svelte';
 
 export type AgentMode = 'coach' | 'recovery' | 'analyst' | 'pinescript' | 'gold' | 'macro' | 'portfolio';
 export type ChatMode = 'normal' | 'agent' | 'discussion' | 'research';
@@ -250,6 +249,8 @@ class ChatState {
     private abortController: AbortController | null = null;
 
     biglotUserId = $state<string>('anonymous');
+
+    activeBotId = $state<string | null>(null);
 
     telegramLinkStatus = $state<TelegramLinkStatus>({ linked: false });
     isTelegramLinkLoading = $state(false);
@@ -623,7 +624,6 @@ class ChatState {
 
         try {
             this.abortController = new AbortController();
-            const activeBotId = botState.activeBotId;
 
             // Build messages for API — inject file_content into the last user message if a file was attached.
             const apiMessages = fileAttachment
@@ -639,11 +639,8 @@ class ChatState {
                 biglotUserId: this.biglotUserId,
                 messages: apiMessages,
                 mode: this.agentMode,
-                chatMode: activeBotId ? 'agent' : this.chatMode
+                chatMode: this.chatMode
             };
-            if (activeBotId) {
-                fetchBody.botId = activeBotId;
-            }
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

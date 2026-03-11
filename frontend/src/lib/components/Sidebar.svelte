@@ -8,16 +8,13 @@
         PanelLeftClose,
         PanelLeftOpen,
         BarChart3,
-        Bot,
         Loader2,
         Link2,
         Unlink2,
         BarChart,
-        Sparkles,
         Search
     } from "lucide-svelte";
     import { chatState } from "$lib/state/chat.svelte";
-    import { botState } from "$lib/state/bots.svelte";
     import { fade } from "svelte/transition";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
@@ -84,7 +81,6 @@
     onMount(() => {
         void chatState.loadAllChats();
         void chatState.refreshTelegramLinkStatus();
-        void botState.loadBots(chatState.biglotUserId);
     });
 </script>
 
@@ -132,18 +128,6 @@
         </button>
 
         <a
-            href="/indicators"
-            class="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground/70 hover:bg-white/5 hover:text-foreground rounded-md transition-colors"
-        >
-            <Bot size={16} class="text-muted-foreground" />
-            <span>Indicator Builder</span>
-            <span
-                class="ml-auto text-[10px] text-primary/70 font-medium"
-                >AI</span
-            >
-        </a>
-
-        <a
             href="/dashboard"
             class="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground/70 hover:bg-white/5 hover:text-foreground rounded-md transition-colors"
         >
@@ -160,19 +144,6 @@
         >
             <BarChart size={16} class="text-muted-foreground" />
             <span>Analytics</span>
-        </a>
-
-        <a
-            href="/bots"
-            class="w-full flex items-center gap-3 px-3 py-2 text-sm text-foreground/70 hover:bg-white/5 hover:text-foreground rounded-md transition-colors"
-        >
-            <Sparkles size={16} class="text-muted-foreground" />
-            <span>My Bots</span>
-            {#if botState.bots.length > 0}
-                <span class="ml-auto text-[10px] text-primary/70 font-medium">{botState.bots.length}</span>
-            {:else}
-                <span class="ml-auto text-[10px] text-primary/70 font-medium">NEW</span>
-            {/if}
         </a>
 
         <button

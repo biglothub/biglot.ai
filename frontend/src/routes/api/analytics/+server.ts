@@ -27,11 +27,6 @@ export const GET: RequestHandler = async ({ url }) => {
             .select('*', { count: 'exact', head: true })
             .eq('role', 'user');
 
-        // Get total custom indicators
-        const { count: totalIndicators } = await supabase
-            .from('custom_indicators')
-            .select('*', { count: 'exact', head: true });
-
         // Get recent activity (last 7 days)
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         
@@ -56,22 +51,13 @@ export const GET: RequestHandler = async ({ url }) => {
             });
         }
 
-        // Get top indicators (most recently created)
-        const { data: topIndicators } = await supabase
-            .from('custom_indicators')
-            .select('name, created_at')
-            .order('created_at', { ascending: false })
-            .limit(5);
-
         return json({
             stats: {
                 totalChats: totalChats || 0,
                 totalMessages: totalMessages || 0,
-                totalIndicators: totalIndicators || 0,
                 recentChatsLast7Days: recentChats?.length || 0
             },
             agentModes: modeCounts,
-            recentIndicators: topIndicators || [],
             period: 'last_7_days'
         });
     } catch (error) {
