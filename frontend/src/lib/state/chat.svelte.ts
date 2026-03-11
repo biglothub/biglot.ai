@@ -641,6 +641,7 @@ class ChatState {
                 mode: this.agentMode,
                 chatMode: this.chatMode
             };
+            if (this.activeBotId) fetchBody.botId = this.activeBotId;
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

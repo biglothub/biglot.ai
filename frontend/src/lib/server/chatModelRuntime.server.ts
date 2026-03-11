@@ -11,12 +11,13 @@ export type ChatModelRuntime = {
 	clientBundle: ReturnType<typeof getClientForModel> | null;
 };
 
-export function resolveChatModelRuntime(chatMode: ChatMode): ChatModelRuntime {
+export function resolveChatModelRuntime(chatMode: ChatMode, modelOverride?: string): ChatModelRuntime {
 	const sharedModel = resolveDefaultAIModel();
 	const normalModel = isAIModel(env.NORMAL_AI_MODEL) ? env.NORMAL_AI_MODEL : sharedModel;
 	const agentModel = isAIModel(env.AGENT_AI_MODEL) ? env.AGENT_AI_MODEL : sharedModel;
 
-	const selectedModel = chatMode === 'agent' ? agentModel : normalModel;
+	const baseModel = chatMode === 'agent' ? agentModel : normalModel;
+	const selectedModel = (modelOverride && isAIModel(modelOverride)) ? modelOverride : baseModel;
 
 	if (chatMode === 'discussion') {
 		const summary = describeDiscussionModels();

@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { getSupabaseAdminClient } from '$lib/server/supabaseAdmin.server';
 import { getSystemPrompt, normalizeAgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 import { checkRateLimit, RATE_LIMITS } from '$lib/server/rateLimiter.server';
@@ -126,6 +127,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const chatId = typeof payload.chatId === 'string' ? payload.chatId : null;
 	const biglotUserId = typeof payload.biglotUserId === 'string' ? payload.biglotUserId : null;
+	const botId = typeof payload.botId === 'string' ? payload.botId : null;
 
 	const MAX_MESSAGES = 50;
 	const MAX_CHARS = 8000;
@@ -174,9 +176,32 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const isDeepResearch = routeType === 'deep_research';
 	const planningEnabled = shouldEnablePlanning(chatMode, routeType);
 
-	const systemPrompt = getSystemPrompt(mode, planningEnabled, isDeepResearch);
+	let systemPrompt = getSystemPrompt(mode, planningEnabled, isDeepResearch);
 
-	const { selectedModel, runModelLabel, runProviderLabel, clientBundle } = resolveChatModelRuntime(chatMode);
+	// Override system prompt with custom bot config if botId provided
+	let botDefaultModel: string | null = null;
+	if (botId && biglotUserId) {
+		try {
+			const supabase = getSupabaseAdminClient();
+			const { data: botRow } = await supabase
+				.from('custom_bots')
+				.select('system_prompt, default_model')
+				.eq('id', botId)
+				.eq('biglot_user_id', biglotUserId)
+				.eq('is_active', true)
+				.single();
+			if (botRow?.system_prompt) {
+				systemPrompt = botRow.system_prompt;
+			}
+			if (botRow?.default_model) {
+				botDefaultModel = botRow.default_model;
+			}
+		} catch {
+			// ignore bot lookup errors — fall back to default system prompt
+		}
+	}
+
+	const { selectedModel, runModelLabel, runProviderLabel, clientBundle } = resolveChatModelRuntime(chatMode, botDefaultModel ?? undefined);
 
 	if (env.BIGLOT_CHAT_ECHO_MODE === '1') {
 		return new Response(`Mode: ${mode}\nModel: ${runModelLabel}\n`, {
