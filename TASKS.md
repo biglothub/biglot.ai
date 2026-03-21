@@ -153,20 +153,22 @@
   - Tests: Alert creation, trigger conditions, notification dispatch.
   - Session notes (2026-03-22): price_alerts table with above/below/crosses conditions. alertEngine.ts: createAlert, listAlerts, deleteAlert, markAlertTriggered, checkAlerts. shouldTrigger handles all conditions including crosses with prevPrice. Tools: set_alert, list_alerts, delete_alert. 26 tests, 806 total passing.
 
-- [ ] **T-402**: Automated Signal Scanner
-  - Status: PENDING | Depends: T-102, T-401
+- [x] **T-402**: Automated Signal Scanner
+  - Status: DONE | Depends: T-102, T-401
   - Spec: Scheduled scanner on watchlist assets. High-confluence signals auto-push TradeSetupBlock via Telegram. Configurable interval + min confluence score.
   - Create: `frontend/src/lib/server/scanner/signalScanner.ts`, `signalScanner.test.ts`
   - Create: `frontend/src/routes/api/scanner/+server.ts`
   - Tests: Mock market data, verify detection.
+  - Session notes (2026-03-22): normaliseSymbol, buildTradeSetup (±0.5 ATR entry zone, 1.5 ATR stop, T1/T2/T3 at 1.5R/3R/5R), scanSymbol (Binance klines, null if <50 candles), scanWatchlist (parallel Promise.allSettled, sort desc). /api/scanner GET+POST with optional Telegram notification and x-scanner-secret auth. Fixed EquityCurve.svelte {@const}→$derived bug. 22 tests, 854 total passing.
 
-- [ ] **T-403**: Performance Analytics Dashboard
-  - Status: PENDING | Depends: T-302
+- [x] **T-403**: Performance Analytics Dashboard
+  - Status: DONE
   - Spec: Enhanced `/analytics` — equity curve chart, monthly returns heatmap, win/loss distribution, R-multiple histogram, drawdown chart, Sharpe/Sortino over time.
   - Modify: `frontend/src/routes/analytics/+page.svelte`
   - Create: `frontend/src/lib/components/analytics/EquityCurve.svelte`, `MonthlyReturns.svelte`, `TradeDistribution.svelte`
   - Create: `frontend/src/routes/api/analytics/performance/+server.ts`
   - Tests: Chart data generation from mock trades.
+  - Session notes (2026-03-22): performanceData.ts with buildEquityCurve, buildMonthlyReturns, buildTradeDistribution, calcSharpe/Sortino/Calmar. EquityCurve.svelte (SVG with area fill+drawdown), MonthlyReturns.svelte (heatmap table), TradeDistribution.svelte (win/loss + R-histogram). /api/analytics/performance endpoint. Injected into analytics page. 26 tests, 854 total passing.
 
 - [ ] **T-404**: Voice Input (Speech-to-Text)
   - Status: PENDING
