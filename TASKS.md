@@ -103,14 +103,15 @@
   - Tests: Verify each method against known calculations.
   - Session notes (2026-03-22): 4 methods: Fixed Fractional (pure risk%), Half-Kelly (capped at user risk%), ATR-adjusted (uses max of ATR*multiple vs user stop), Equal Risk Contribution (risk%/numPositions). Recommends ATR > Kelly > FF. MetricCardBlock + comparison table. 31 tests, 678 total passing.
 
-- [ ] **T-302**: Portfolio Tracker
-  - Status: PENDING
+- [x] **T-302**: Portfolio Tracker
+  - Status: DONE
   - Spec: Persistent portfolio in Supabase — positions (entry, size, current price, PnL), closed trades (R-multiple), equity curve. Tool `portfolio_snapshot`. Dashboard widget.
   - Create: `frontend/src/lib/server/portfolio/tracker.ts`, `tracker.test.ts`, `frontend/src/lib/server/tools/portfolio.tool.ts`
   - Create: `frontend/src/lib/types/portfolio.ts`, `frontend/sql/portfolio.sql`
   - Create: `frontend/src/lib/components/dashboard/PortfolioWidget.svelte`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: CRUD, PnL calculations, equity curve generation.
+  - Session notes (2026-03-22): CRUD via Supabase (addPosition, listPositions, closePosition, listClosedTrades, deletePosition). Tools: portfolio_snapshot, add_position, close_position, delete_position. Pure helpers for unrealised PnL, R-multiple, win rate, avg R. PortfolioWidget.svelte shows open positions with live PnL, stats row. Fixed buildPortfolioSnapshot mock (order() must be thenable for listPositions). 703 tests passing.
 
 - [ ] **T-303**: Drawdown Monitor
   - Status: PENDING | Depends: T-302
