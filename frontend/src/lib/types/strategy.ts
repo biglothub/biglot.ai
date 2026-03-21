@@ -38,7 +38,7 @@ export type AssetClass = 'crypto' | 'forex' | 'equity' | 'commodity';
 
 // ─── Indicator Condition ──────────────────────────────────────────────────────
 
-/** Reference to another indicator's value (used as a threshold) */
+/** Reference to another indicator used as a threshold */
 export type IndicatorRef = {
 	indicator: IndicatorName;
 	params?: Record<string, number>;
@@ -50,9 +50,9 @@ export type IndicatorRef = {
  */
 export type IndicatorCondition = {
 	indicator: IndicatorName;
-	params?: Record<string, number>; // e.g. { period: 14 }, { fast: 12, slow: 26 }
+	params?: Record<string, number>;
 	operator: ComparisonOperator;
-	threshold: number | IndicatorRef; // right-hand side
+	threshold: number | IndicatorRef;
 };
 
 // ─── Condition Groups ─────────────────────────────────────────────────────────
@@ -74,19 +74,19 @@ export type EntryCondition = {
 
 export type StopLossExit = {
 	type: 'stop_loss';
-	value: number; // must be > 0
+	value: number;
 	unit: RiskUnit;
 };
 
 export type TakeProfitExit = {
 	type: 'take_profit';
-	value: number; // must be > 0
+	value: number;
 	unit: ProfitUnit;
 };
 
 export type TrailingStopExit = {
 	type: 'trailing_stop';
-	value: number; // must be > 0
+	value: number;
 	unit: 'pct' | 'atr_multiple';
 };
 
@@ -97,7 +97,7 @@ export type IndicatorExit = {
 
 export type TimeBasedExit = {
 	type: 'time_based';
-	bars: number; // exit after N bars (positive integer)
+	bars: number;
 };
 
 export type ExitCondition =
@@ -127,7 +127,7 @@ export type RiskParams = {
 // ─── Asset Filter ─────────────────────────────────────────────────────────────
 
 export type AssetFilter = {
-	symbols?: string[]; // explicit whitelist e.g. ['BTCUSDT', 'ETHUSDT']
+	symbols?: string[];
 	minVolume24hUsd?: number;
 	minMarketCapUsd?: number;
 	assetClass?: AssetClass[];
