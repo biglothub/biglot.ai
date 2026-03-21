@@ -23,6 +23,7 @@ import './tools/handoff.tool';
 import './tools/signals.tool';
 import './tools/backtest.tool';
 import './tools/economicCalendar.tool';
+import './tools/sentiment.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
