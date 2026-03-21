@@ -12,6 +12,10 @@
     } from "lucide-svelte";
     import { onMount } from "svelte";
     import { fade, fly } from "svelte/transition";
+    import EquityCurve from "$lib/components/analytics/EquityCurve.svelte";
+    import MonthlyReturns from "$lib/components/analytics/MonthlyReturns.svelte";
+    import TradeDistribution from "$lib/components/analytics/TradeDistribution.svelte";
+    import type { PerformanceData } from "$lib/server/analytics/performanceData";
 
     type AnalyticsResponse = {
         stats: {
@@ -52,12 +56,15 @@
     let analytics = $state<AnalyticsResponse | null>(null);
     let error = $state<string | null>(null);
     let lastLoadedAt = $state<Date | null>(null);
+    let perfData = $state<PerformanceData | null>(null);
+    let perfLoading = $state(false);
 
     const periodLabel = $derived(analytics ? formatPeriod(analytics.period) : "Last 7 days");
     const modeRows = $derived(analytics ? buildModeRows(analytics.agentModes) : []);
 
     onMount(() => {
         void loadAnalytics();
+        void loadPerfData();
     });
 
     async function loadAnalytics(mode: "initial" | "refresh" = "initial") {
@@ -90,6 +97,16 @@
             } else {
                 isRefreshing = false;
             }
+        }
+    }
+
+    async function loadPerfData() {
+        perfLoading = true;
+        try {
+            const res = await fetch(`/api/analytics/performance?user_id=${encodeURIComponent(chatState.biglotUserId)}&start_equity=10000`);
+            if (res.ok) perfData = await res.json() as PerformanceData;
+        } catch { /* silent */ } finally {
+            perfLoading = false;
         }
     }
 
@@ -437,6 +454,58 @@
                 {/if}
             </div>
         </div>
+
+    <!-- ── Performance Analytics ─────────────────────────────────── -->
+    {#if !isLoading}
+        <section class="analytics-container" style="padding-top:0">
+            <div class="analytics-panel" style="margin-bottom:1.5rem">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-eyebrow">Trade Performance</p>
+                        <h2 class="panel-title">Portfolio Analytics</h2>
+                    </div>
+                </div>
+                {#if perfLoading}
+                    <div class="flex h-32 items-center justify-center text-sm text-white/40">Loading performance data…</div>
+                {:else if perfData && perfData.totalTrades > 0}
+                    <div class="grid gap-4 mt-4" style="grid-template-columns:1fr 1fr">
+                        <EquityCurve curve={perfData.equityCurve} startEquity={10000} />
+                        <TradeDistribution dist={perfData.distribution} />
+                    </div>
+                    <div class="mt-4">
+                        <MonthlyReturns months={perfData.monthlyReturns} />
+                    </div>
+                    <!-- Metrics row -->
+                    <div class="mt-4 grid grid-cols-4 gap-3 text-center text-sm">
+                        {#if perfData.metrics.sharpe !== null}
+                            <div class="rounded-lg bg-white/5 p-3">
+                                <div class="text-xs text-white/40 mb-1">Sharpe</div>
+                                <div class="font-bold {perfData.metrics.sharpe >= 1 ? 'text-green-400' : perfData.metrics.sharpe >= 0 ? 'text-white/80' : 'text-red-400'}">{perfData.metrics.sharpe.toFixed(2)}</div>
+                            </div>
+                        {/if}
+                        {#if perfData.metrics.sortino !== null}
+                            <div class="rounded-lg bg-white/5 p-3">
+                                <div class="text-xs text-white/40 mb-1">Sortino</div>
+                                <div class="font-bold {perfData.metrics.sortino >= 1 ? 'text-green-400' : 'text-white/80'}">{perfData.metrics.sortino.toFixed(2)}</div>
+                            </div>
+                        {/if}
+                        {#if perfData.metrics.calmar !== null}
+                            <div class="rounded-lg bg-white/5 p-3">
+                                <div class="text-xs text-white/40 mb-1">Calmar</div>
+                                <div class="font-bold text-white/80">{perfData.metrics.calmar.toFixed(2)}</div>
+                            </div>
+                        {/if}
+                        <div class="rounded-lg bg-white/5 p-3">
+                            <div class="text-xs text-white/40 mb-1">Max DD</div>
+                            <div class="font-bold text-red-400">{perfData.metrics.maxDrawdownPct.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="flex h-24 items-center justify-center text-sm text-white/40">No closed trades yet. Close some positions to see performance analytics.</div>
+                {/if}
+            </div>
+        </section>
+    {/if}
     </main>
 </div>
 
