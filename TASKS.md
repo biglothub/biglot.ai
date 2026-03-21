@@ -241,7 +241,7 @@
   - Create: `frontend/src/lib/server/websocket/priceFeed.ts`, `priceFeed.test.ts`
   - Modify: `frontend/src/lib/components/dashboard/DashboardMiniChart.svelte`, `WatchlistBar.svelte`
   - Tests: Mock WebSocket, reconnect logic.
-  - Session notes (2026-03-22): priceFeed.ts: PriceFeed class (injectable WebSocket ctor), buildStreamUrl, parseTickerMessage (Binance 24hrMiniTicker), calcReconnectDelay (exponential + 25% jitter), addSymbol/removeSymbol live reconnect. WatchlistBar.svelte: overlays live Binance prices on USDT-pair crypto symbols; REST API as 30s fallback. 21 tests (1049 total).
+  - Session notes (2026-03-22): priceFeed.ts: PriceFeed class (injectable WebSocket ctor), buildStreamUrl, parseTickerMessage (Binance 24hrMiniTicker), calcReconnectDelay (exponential + 25% jitter), addSymbol/removeSymbol live reconnect. WatchlistBar.svelte: overlays live Binance prices on USDT-pair crypto symbols; exponential backoff reconnect with jitter; flash animation on price update; REST API as 30s fallback. DashboardMiniChart.svelte: optional livePrice prop shows dashed horizontal line + price badge. 21 tests (1049 total).
 
 ---
 
