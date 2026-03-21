@@ -83,12 +83,13 @@
   - Tests: Mock Binance futures API, verify OI aggregation.
   - Session notes (2026-03-22): Implemented with Binance Futures API (funding rates, OI, L/S ratios, liquidations) and Deribit (BTC options: put/call ratio, max pain via pain minimisation algorithm). `annualiseFundingRate` converts 8h rate → yearly %. 39 tests, 622 total passing.
 
-- [ ] **T-206**: Market Breadth Dashboard
-  - Status: PENDING
+- [x] **T-206**: Market Breadth Dashboard
+  - Status: DONE
   - Spec: Dashboard section — advance/decline ratio, % above 200 SMA, sector rotation heatmap, relative strength by sector (XLF, XLK, XLE ETFs via Yahoo Finance).
   - Create: `frontend/src/lib/server/data/breadth.data.ts`, `frontend/src/lib/components/dashboard/MarketBreadth.svelte`
   - Modify: `frontend/src/routes/dashboard/+page.svelte`, `frontend/src/routes/api/dashboard/+server.ts`
   - Tests: Breadth calculations, mock Yahoo Finance.
+  - Session notes (2026-03-22): Sector rotation heatmap for 11 sector ETFs vs SPY using Yahoo Finance 2-month daily data. `BreadthData` added to DashboardResponse type. MarketBreadth.svelte has 1D/1W/1M/vsSPY toggle. Added `SectorPerformance` and `BreadthData` types to dashboardMeta.ts. 25 tests, 647 total passing.
 
 ---
 
