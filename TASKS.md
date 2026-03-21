@@ -95,12 +95,13 @@
 
 ## Phase 3: Risk & Portfolio
 
-- [ ] **T-301**: Position Size Calculator Tool
-  - Status: PENDING
+- [x] **T-301**: Position Size Calculator Tool
+  - Status: DONE
   - Spec: Tool `calculate_position_size` — fixed fractional, Kelly criterion, volatility-adjusted (ATR), equal risk contribution. Input: account size, risk %, entry, stop, instrument type. Returns MetricCardBlock.
   - Create: `frontend/src/lib/server/tools/positionSize.tool.ts`, `frontend/src/lib/server/risk/positionSizing.ts`, `positionSizing.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Verify each method against known calculations.
+  - Session notes (2026-03-22): 4 methods: Fixed Fractional (pure risk%), Half-Kelly (capped at user risk%), ATR-adjusted (uses max of ATR*multiple vs user stop), Equal Risk Contribution (risk%/numPositions). Recommends ATR > Kelly > FF. MetricCardBlock + comparison table. 31 tests, 678 total passing.
 
 - [ ] **T-302**: Portfolio Tracker
   - Status: PENDING
