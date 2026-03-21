@@ -53,8 +53,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock API response, verify table format, timezone handling.
 
-- [ ] **T-202**: Sentiment Analysis Tool
-  - Status: PENDING
+- [x] **T-202**: Sentiment Analysis Tool
+  - Status: DONE
   - Spec: Tool `get_sentiment` — aggregates Fear & Greed (existing), social sentiment via web search, funding rates (Binance/Bybit), long/short ratios. Returns GaugeBlock + MetricCardBlock.
   - Create: `frontend/src/lib/server/tools/sentiment.tool.ts`, `frontend/src/lib/server/data/sentiment.data.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
@@ -230,6 +230,12 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-202)
+- Completed: T-202 Sentiment Analysis Tool
+- Result: `sentiment.data.ts` with pure helpers (computeFundingSentiment, computeLongShortSentiment, computeCompositeScore, sentimentLabel, annualisedFundingRate) + fetchers (fetchFearGreed from alternative.me, fetchFundingRates from Binance premiumIndex, fetchLongShortRatios from Binance futures, fetchSentimentSnapshot). `sentiment.tool.ts` registers `get_sentiment` tool — returns GaugeBlock (composite 0–100) + MetricCardBlock (F&G, funding ann.%, L/S ratios). Weighted composite: F&G 50%, funding 30%, L/S 20%. 42 tests passing. Total: 524 tests.
+- Issues: All files were pre-created in a previous session.
+- Next: T-203 Multi-Source OHLCV Provider
 
 ### Session 2026-03-22 (T-201)
 - Completed: T-201 Economic Calendar Tool
