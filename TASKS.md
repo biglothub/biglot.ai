@@ -46,8 +46,8 @@
 
 ## Phase 2: Data & Analysis
 
-- [ ] **T-201**: Economic Calendar Tool
-  - Status: PENDING
+- [x] **T-201**: Economic Calendar Tool
+  - Status: DONE
   - Spec: Tool `get_economic_calendar` — upcoming high-impact events (FOMC, NFP, CPI, ECB, BOJ). Return TableBlock with date, event, forecast, previous, impact level.
   - Create: `frontend/src/lib/server/tools/economicCalendar.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
@@ -230,6 +230,12 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-201)
+- Completed: T-201 Economic Calendar Tool
+- Result: `economicCalendar.tool.ts` with `get_economic_calendar` tool — fetches from ForexFactory unofficial JSON feed (thisWeek + nextWeek via `Promise.allSettled`). Filters by `impact_filter` (high/medium_and_high/all), `currency_filter` (comma-separated), `days_ahead` (1-14). Returns TableBlock with 7 columns: Date/Time, CCY, Event, Impact, Forecast, Previous, Actual. Full failure detection (anySuccess flag). Cache mock added to tests. 31 tests all passing. Total: 482 tests.
+- Issues: Test file and agentLoop import were already pre-created; agentLoop.server.test.ts was missing the `vi.mock` for economicCalendar.tool — added.
+- Next: T-202 Sentiment Analysis Tool
 
 ### Session 2026-03-22 (T-105)
 - Completed: T-105 Backtest Results Visualization
