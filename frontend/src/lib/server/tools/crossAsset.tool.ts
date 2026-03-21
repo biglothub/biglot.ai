@@ -1,7 +1,8 @@
-// Cross-Asset Correlation Tool — get_cross_asset_correlation
-// Fetches 90-day daily closes for Gold, DXY, SPX, 10Y yield → calculates Pearson correlation
+// Cross-Asset Correlation Tool — get_cross_asset_correlation + get_correlation_matrix
+// Fetches daily closes and calculates Pearson correlations
 import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
+import { buildCorrelationMatrix } from '../risk/correlation';
 
 const YAHOO_HEADERS = {
 	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -196,6 +197,153 @@ registerTool({
 		};
 
 		toolCache.set(cacheKey, result, 60 * 60_000); // cache 1hr
+		return result;
+	}
+});
+
+// ─── get_correlation_matrix ───────────────────────────────────────────────────
+// T-304: User-defined asset list, rolling window, Pearson → HeatmapBlock
+
+// Known friendly names → Yahoo Finance symbols
+const SYMBOL_ALIASES: Record<string, string> = {
+	BTC: 'BTC-USD', BITCOIN: 'BTC-USD',
+	ETH: 'ETH-USD', ETHEREUM: 'ETH-USD',
+	SOL: 'SOL-USD', SOLANA: 'SOL-USD',
+	BNB: 'BNB-USD',
+	XRP: 'XRP-USD',
+	GOLD: 'GC=F', XAU: 'GC=F',
+	SILVER: 'SI=F', XAG: 'SI=F',
+	OIL: 'CL=F', WTI: 'CL=F',
+	SPX: '%5EGSPC', SP500: '%5EGSPC',
+	NDX: '%5EIXIC', NASDAQ: '%5EIXIC',
+	DXY: 'DX-Y.NYB',
+	TNX: '%5ETNX', YIELD10Y: '%5ETNX',
+};
+
+function resolveSymbol(input: string): { yahooSymbol: string; label: string } {
+	const upper = input.toUpperCase().trim();
+	const yahoo = SYMBOL_ALIASES[upper] ?? input.trim();
+	return { yahooSymbol: yahoo, label: upper };
+}
+
+async function fetchCloses(yahooSymbol: string, rangeDays: number): Promise<number[] | null> {
+	try {
+		const range = rangeDays <= 30 ? '1mo' : rangeDays <= 60 ? '2mo' : rangeDays <= 90 ? '3mo' : '6mo';
+		const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=${range}&interval=1d`;
+		const res = await fetch(url, { headers: YAHOO_HEADERS });
+		if (!res.ok) return null;
+		const data = await res.json() as { chart?: { result?: { indicators?: { quote?: { close?: (number | null)[] }[] } }[] } };
+		const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close ?? [];
+		return closes.filter((c): c is number => c != null && !isNaN(c));
+	} catch {
+		return null;
+	}
+}
+
+registerTool({
+	name: 'get_correlation_matrix',
+	description:
+		'Build a Pearson correlation matrix for user-defined assets over a rolling window. Returns a HeatmapBlock. Use when user asks about correlation between assets, diversification, or which assets move together.',
+	parameters: {
+		type: 'object',
+		properties: {
+			symbols: {
+				type: 'string',
+				description: 'Comma-separated symbols or names (e.g. "BTC,ETH,GOLD,SPX,DXY"). Up to 8 assets.'
+			},
+			window: {
+				type: 'number',
+				enum: [30, 60, 90, 180],
+				description: 'Rolling window in days (30, 60, 90, or 180). Default 90.'
+			}
+		},
+		required: ['symbols']
+	},
+	timeout: 30_000,
+	execute: async (args): Promise<ToolResult> => {
+		if (!args.symbols || typeof args.symbols !== 'string') {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: 'symbols parameter is required.', tool: 'get_correlation_matrix' }],
+				textSummary: 'Error: symbols required.'
+			};
+		}
+
+		const windowDays: number = [30, 60, 90, 180].includes(Number(args.window))
+			? Number(args.window)
+			: 90;
+
+		const rawSymbols = String(args.symbols).split(',').map(s => s.trim()).filter(Boolean).slice(0, 8);
+		if (rawSymbols.length < 2) {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: 'At least 2 symbols required for a correlation matrix.', tool: 'get_correlation_matrix' }],
+				textSummary: 'Error: need at least 2 symbols.'
+			};
+		}
+
+		const resolved = rawSymbols.map(resolveSymbol);
+		const cacheKey = toolCache.generateKey('get_correlation_matrix', { symbols: resolved.map(r => r.yahooSymbol), windowDays });
+		const cached = toolCache.get<ToolResult>(cacheKey);
+		if (cached) return cached;
+
+		// Fetch closes in parallel
+		const fetched = await Promise.all(resolved.map(r => fetchCloses(r.yahooSymbol, windowDays)));
+
+		const seriesMap = new Map<string, number[]>();
+		for (let i = 0; i < resolved.length; i++) {
+			if (fetched[i] && fetched[i]!.length >= 2) {
+				seriesMap.set(resolved[i].label, fetched[i]!);
+			}
+		}
+
+		if (seriesMap.size < 2) {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: 'Insufficient data for at least 2 assets. Check symbols are valid.', tool: 'get_correlation_matrix' }],
+				textSummary: 'Error: could not fetch enough price data.'
+			};
+		}
+
+		const labels = resolved.map(r => r.label).filter(l => seriesMap.has(l));
+		const { labels: validLabels, matrix } = buildCorrelationMatrix(labels, seriesMap, windowDays);
+
+		if (validLabels.length < 2) {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: 'Not enough valid price series to compute correlations.', tool: 'get_correlation_matrix' }],
+				textSummary: 'Error: insufficient data.'
+			};
+		}
+
+		// HeatmapBlock: assets = columns, timeframes = rows (same labels for square matrix)
+		const heatmapBlock: ToolResult['contentBlocks'][number] = {
+			type: 'heatmap',
+			title: `Correlation Matrix — ${windowDays}-Day Rolling Window`,
+			assets: validLabels,
+			timeframes: validLabels,
+			data: matrix,
+			colorScale: 'redgreen',
+		};
+
+		// Summary text: highlight strongest non-self correlations
+		const pairs: { a: string; b: string; r: number }[] = [];
+		for (let i = 0; i < validLabels.length; i++) {
+			for (let j = i + 1; j < validLabels.length; j++) {
+				pairs.push({ a: validLabels[i], b: validLabels[j], r: matrix[i][j] });
+			}
+		}
+		pairs.sort((p1, p2) => Math.abs(p2.r) - Math.abs(p1.r));
+		const topPairs = pairs.slice(0, 3).map(p => `${p.a}/${p.b}: ${p.r.toFixed(2)}`).join(', ');
+
+		const result: ToolResult = {
+			success: true,
+			contentBlocks: [heatmapBlock],
+			textSummary: `${windowDays}-day correlation matrix for ${validLabels.join(', ')}. Strongest correlations: ${topPairs}.`,
+			sources: [{ name: 'Yahoo Finance', url: 'https://finance.yahoo.com', accessedAt: Date.now() }]
+		};
+
+		toolCache.set(cacheKey, result, 4 * 60 * 60_000); // 4hr cache
 		return result;
 	}
 });
