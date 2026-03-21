@@ -67,12 +67,13 @@
   - Modify: `frontend/src/lib/server/tools/charts.tool.ts`, `gold.tool.ts` (use provider)
   - Tests: Fallback chain, normalization, error handling.
 
-- [ ] **T-204**: On-Chain Data Tool
-  - Status: PENDING
+- [x] **T-204**: On-Chain Data Tool
+  - Status: DONE
   - Spec: Tool `get_onchain_data` — BTC/ETH on-chain: active addresses, exchange flows, MVRV, NUPL, hash rate. Free APIs (Blockchain.com, Glassnode public). Returns MetricCardBlock.
   - Create: `frontend/src/lib/server/tools/onchain.tool.ts`, `frontend/src/lib/server/data/onchain.data.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock API responses, verify metric calculations.
+  - Session notes (2026-03-22): Implemented using CoinMetrics Community API (AdrActCnt, HashRate, NVTAdj, CapMrktCurUSD, CapRealUSD, TxCnt) + Blockchain.com fallback for BTC. MVRV computed as CapMrktCurUSD/CapRealUSD. Hash rate converted GH/s→EH/s (BTC) or TH/s (ETH). 28 tests, all passing. 583 total tests passing.
 
 - [ ] **T-205**: Derivatives Data Tool
   - Status: PENDING
