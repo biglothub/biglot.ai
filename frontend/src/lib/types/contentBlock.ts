@@ -30,6 +30,29 @@ export type ImageBlock = {
 	caption?: string;
 };
 
+export type PatternType =
+	| 'head_and_shoulders'
+	| 'inverse_head_and_shoulders'
+	| 'double_top'
+	| 'double_bottom'
+	| 'ascending_triangle'
+	| 'descending_triangle'
+	| 'symmetric_triangle'
+	| 'bull_flag'
+	| 'bear_flag'
+	| 'rising_wedge'
+	| 'falling_wedge';
+
+export type PatternAnnotation = {
+	patternType: PatternType;
+	label: string;
+	startIndex: number;
+	endIndex: number;
+	keyPoints: { index: number; price: number; label: string }[];
+	direction: 'bullish' | 'bearish' | 'neutral';
+	confidence: number;   // 0–1
+};
+
 export type ChartBlock = {
 	type: 'chart';
 	chartType: 'candlestick' | 'line' | 'bar';
@@ -42,6 +65,7 @@ export type ChartBlock = {
 		color?: string;
 		overlay: boolean; // true = on price chart, false = separate panel
 	}[];
+	patterns?: PatternAnnotation[];
 };
 
 export type TableBlock = {
