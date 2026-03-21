@@ -235,12 +235,13 @@
   - Tests: Parameter sweep, robustness scoring.
   - Session notes (2026-03-22): optimizer.ts (pre-existing from prev session): scoreMetrics, computeRobustness, classifyOverfitRisk, buildSuggestion, applyParam, extractOptimizableParams, paramRange, runGridSearch. strategyOptimizer.tool.ts: optimize_strategy tool — fetches OHLCV, auto-detects params, runs grid, returns MetricCard + top-5 table + overfit warnings. 1028 tests passing.
 
-- [ ] **T-506**: Real-Time WebSocket Price Feed
-  - Status: PENDING
+- [x] **T-506**: Real-Time WebSocket Price Feed
+  - Status: DONE
   - Spec: Binance WebSocket for real-time prices. Multi-symbol support. Reconnect with exponential backoff. Feed into dashboard + alerts.
   - Create: `frontend/src/lib/server/websocket/priceFeed.ts`, `priceFeed.test.ts`
   - Modify: `frontend/src/lib/components/dashboard/DashboardMiniChart.svelte`, `WatchlistBar.svelte`
   - Tests: Mock WebSocket, reconnect logic.
+  - Session notes (2026-03-22): priceFeed.ts: PriceFeed class (injectable WebSocket ctor), buildStreamUrl, parseTickerMessage (Binance 24hrMiniTicker), calcReconnectDelay (exponential + 25% jitter), addSymbol/removeSymbol live reconnect. WatchlistBar.svelte: overlays live Binance prices on USDT-pair crypto symbols; REST API as 30s fallback. 21 tests (1049 total).
 
 ---
 
