@@ -226,13 +226,14 @@
   - Tests: CRUD, publish/fork, access control.
   - Session notes (2026-03-22): marketplace.ts: publishStrategy, listPublished (sort/filter/search), forkStrategy, rateStrategy (upsert+recompute avg), unpublishStrategy. published_strategies + strategy_ratings tables with avg_rating trigger. StrategyCard + StrategyList components. /api/strategies + /api/strategies/[id] REST routes. Browse and detail pages. 20 tests, 997 total passing.
 
-- [ ] **T-505**: AI Strategy Optimizer
-  - Status: PENDING | Depends: T-103, T-104
+- [x] **T-505**: AI Strategy Optimizer
+  - Status: DONE | Depends: T-103, T-104
   - Spec: LLM suggests parameter optimizations from backtest results. Grid search on key params, AI analyzes robust vs overfit regions. Tool: `optimize_strategy`.
   - Create: `frontend/src/lib/server/backtest/optimizer.ts`, `optimizer.test.ts`
   - Create: `frontend/src/lib/server/tools/strategyOptimizer.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Parameter sweep, robustness scoring.
+  - Session notes (2026-03-22): optimizer.ts (pre-existing from prev session): scoreMetrics, computeRobustness, classifyOverfitRisk, buildSuggestion, applyParam, extractOptimizableParams, paramRange, runGridSearch. strategyOptimizer.tool.ts: optimize_strategy tool — fetches OHLCV, auto-detects params, runs grid, returns MetricCard + top-5 table + overfit warnings. 1028 tests passing.
 
 - [ ] **T-506**: Real-Time WebSocket Price Feed
   - Status: PENDING
