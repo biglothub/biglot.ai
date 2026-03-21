@@ -208,21 +208,23 @@
   - Tests: Mock multi-TF data, verify trend alignment.
   - Session notes (2026-03-22): multiTF.ts: detectTrend, classifyMACD, calcBiasScore (-2..+2), findKeyLevels, analyseTimeframe, findConfluenceZones, buildMTFAnalysis. Tool: multi_timeframe_analysis parallel-fetches all TFs, returns HeatmapBlock + MetricCard + table + confluence zones. 26 tests, 927 total passing.
 
-- [ ] **T-503**: Order Flow Analysis
-  - Status: PENDING
+- [x] **T-503**: Order Flow Analysis
+  - Status: DONE
   - Spec: Tool `get_order_flow` — whale tracking, order book depth, CVD, buy/sell volume ratio. Binance depth API + Blockchain.com.
   - Create: `frontend/src/lib/server/tools/orderFlow.tool.ts`, `frontend/src/lib/server/data/orderFlow.data.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock order book, CVD calculation.
+  - Session notes (2026-03-22): orderFlow.data.ts: calcOrderBookStats (bid/ask walls, spread, buy pressure %), buildCVD (cumulative delta), calcBuySellRatio, classifyBuyPressure. fetchOrderBook + fetchCandleVolumes (FAPI→spot fallback, aggTrades bucketed into 5-min). get_order_flow tool: MetricCard + order book walls table. 27 tests, 977 total passing.
 
-- [ ] **T-504**: Strategy Marketplace
-  - Status: PENDING | Depends: T-103, T-104
+- [x] **T-504**: Strategy Marketplace
+  - Status: DONE | Depends: T-103, T-104
   - Spec: Publish strategies to shared marketplace. Browse, fork, backtest community strategies. Rate & review. RLS per user.
   - Create: `frontend/src/routes/strategies/+page.svelte`, `[id]/+page.svelte`
   - Create: `frontend/src/routes/api/strategies/+server.ts`
   - Create: `frontend/src/lib/components/strategies/StrategyCard.svelte`, `StrategyList.svelte`
   - Create: `frontend/sql/published_strategies.sql`
   - Tests: CRUD, publish/fork, access control.
+  - Session notes (2026-03-22): marketplace.ts: publishStrategy, listPublished (sort/filter/search), forkStrategy, rateStrategy (upsert+recompute avg), unpublishStrategy. published_strategies + strategy_ratings tables with avg_rating trigger. StrategyCard + StrategyList components. /api/strategies + /api/strategies/[id] REST routes. Browse and detail pages. 20 tests, 997 total passing.
 
 - [ ] **T-505**: AI Strategy Optimizer
   - Status: PENDING | Depends: T-103, T-104
