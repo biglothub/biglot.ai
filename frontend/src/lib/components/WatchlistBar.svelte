@@ -12,8 +12,11 @@
     let items = $state<WatchlistItem[]>([]);
     let loading = $state(true);
     let interval: ReturnType<typeof setInterval>;
+    let ws: WebSocket | null = null;
 
     const GOLD_SYMBOLS = new Set(['GC=F', 'SI=F']);
+    // Symbols that can be streamed from Binance miniTicker (USDT pairs)
+    const CRYPTO_WS_SYMBOLS = new Set(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']);
 
     async function fetchWatchlist() {
         try {
@@ -27,13 +30,58 @@
         }
     }
 
-    onMount(() => {
-        fetchWatchlist();
+    /** Open Binance miniTicker WebSocket for crypto USDT pairs in the watchlist */
+    function openPriceFeed() {
+        if (typeof WebSocket === 'undefined') return;
+
+        const cryptoSymbols = items
+            .map(i => i.symbol)
+            .filter(s => CRYPTO_WS_SYMBOLS.has(s));
+
+        if (cryptoSymbols.length === 0) return;
+
+        const streams = cryptoSymbols.map(s => `${s.toLowerCase()}@miniTicker`).join('/');
+        const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
+
+        ws?.close();
+        ws = new WebSocket(url);
+
+        ws.onmessage = (ev) => {
+            try {
+                const msg = JSON.parse(ev.data) as { data?: Record<string, string>; e?: string };
+                const data = (msg.data ?? msg) as Record<string, string>;
+                if (data.e !== '24hrMiniTicker') return;
+                const symbol = data.s;
+                const price = Number(data.c);
+                const open = Number(data.o);
+                if (!symbol || !isFinite(price) || !isFinite(open)) return;
+                const changePct = open > 0 ? ((price - open) / open) * 100 : 0;
+                // Update matching item in place
+                const idx = items.findIndex(i => i.symbol === symbol);
+                if (idx !== -1) {
+                    items[idx] = { ...items[idx], price, change: changePct };
+                }
+            } catch {
+                // ignore parse errors
+            }
+        };
+
+        ws.onerror = () => {
+            ws?.close();
+            ws = null;
+        };
+    }
+
+    onMount(async () => {
+        await fetchWatchlist();
+        openPriceFeed();
         interval = setInterval(fetchWatchlist, 30_000);
     });
 
     onDestroy(() => {
         clearInterval(interval);
+        ws?.close();
+        ws = null;
     });
 
     function fmtPrice(item: WatchlistItem): string {
