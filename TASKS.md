@@ -60,8 +60,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock each data source, verify aggregation.
 
-- [ ] **T-203**: Multi-Source OHLCV Provider
-  - Status: PENDING
+- [x] **T-203**: Multi-Source OHLCV Provider
+  - Status: DONE
   - Spec: Provider pattern for OHLCV — Binance, Yahoo Finance, CoinGecko with auto-fallback. Normalize to OHLCV[] type. Support 1m to 1M timeframes.
   - Create: `frontend/src/lib/server/data/ohlcvProvider.ts`, `ohlcvProvider.test.ts`
   - Modify: `frontend/src/lib/server/tools/charts.tool.ts`, `gold.tool.ts` (use provider)
@@ -230,6 +230,12 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-203)
+- Completed: T-203 Multi-Source OHLCV Provider
+- Result: `ohlcvProvider.ts` with `fetchOHLCV(symbol, interval, limit)` — Binance → Yahoo Finance → CoinGecko auto-fallback. Exports `normalizeBinanceSymbol`, `normalizeBinanceInterval`, `resolveCoinGeckoId`, plus individual source fetchers. Routing: forex/commodity → Yahoo only; crypto → Binance → Yahoo → CoinGecko. `charts.tool.ts` and `gold.tool.ts` updated to use the provider. 31 tests. Total: 555 tests.
+- Issues: `extractBase` was stripping the base symbol (e.g. 'btc' from 'btcusdt') due to `.replace(/btc$/)` after USDT removal; fixed with a loop-based approach.
+- Next: T-204 On-Chain Data Tool
 
 ### Session 2026-03-22 (T-202)
 - Completed: T-202 Sentiment Analysis Tool
