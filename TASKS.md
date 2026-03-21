@@ -1,0 +1,243 @@
+# TASKS.md - BigLot.ai Development Roadmap
+> Goal: World's best trading LLM
+
+---
+
+## Phase 1: Core Trading Intelligence
+
+- [x] **T-101**: Technical Indicator Engine
+  - Status: DONE
+  - Spec: Standalone TA module with 20+ indicators (SMA, EMA, RSI, MACD, Bollinger, ATR, Stochastic, ADX, OBV, VWAP, Ichimoku, Fibonacci, Pivot Points, Williams %R, CCI, MFI, Parabolic SAR, Donchian, Keltner, SuperTrend). Pure functions taking OHLCV[] returning IndicatorDataPoint[].
+  - Create: `frontend/src/lib/server/indicators/engine.ts`, `engine.test.ts`
+  - Modify: `frontend/src/lib/server/tools/charts.tool.ts` (replace inline RSI/MACD)
+  - Tests: Each indicator against known reference values. Edge cases: empty arrays, insufficient data, NaN.
+
+- [x] **T-102**: Signal Generator Tool
+  - Status: DONE | Depends: T-101
+  - Spec: Tool `generate_signals` — multi-indicator confluence detection. Scans: MA crossovers, RSI divergences, MACD signal crosses, Bollinger squeeze/breakout, S/R touches. Returns TradeSetupBlock when strong confluence found.
+  - Create: `frontend/src/lib/server/tools/signals.tool.ts`, `frontend/src/lib/server/indicators/confluence.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts` (import)
+  - Tests: Feed known historical setups, verify signal detection.
+
+- [ ] **T-103**: Strategy Definition Schema
+  - Status: PENDING
+  - Spec: JSON schema for trading strategies — entry conditions (indicator + threshold + comparison), exit conditions, position sizing, risk params, timeframe, asset filters. Store in Supabase `strategies` table.
+  - Create: `frontend/src/lib/types/strategy.ts`, `frontend/src/lib/server/strategy.server.ts`, `strategy.server.test.ts`
+  - Create: `frontend/sql/strategies.sql`
+  - Tests: Schema validation, reject invalid strategies, CRUD ops.
+
+- [ ] **T-104**: Backtesting Engine
+  - Status: PENDING | Depends: T-101, T-103
+  - Spec: Takes Strategy + OHLCV[] and simulates trades. Metrics: total return, max drawdown, Sharpe, Sortino, win rate, avg R-multiple, profit factor, max consecutive losses. Walk-forward validation (70/30).
+  - Create: `frontend/src/lib/server/backtest/engine.ts`, `metrics.ts`, `engine.test.ts`
+  - Create: `frontend/src/lib/server/tools/backtest.tool.ts`, `frontend/src/lib/types/backtest.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts` (import)
+  - Tests: Backtest simple MA crossover on known data, verify PnL matches hand-calc.
+
+- [ ] **T-105**: Backtest Results Visualization
+  - Status: PENDING | Depends: T-104
+  - Spec: BacktestBlock — equity curve (line chart), drawdown chart, trade markers on price, metrics table. Use lightweight-charts.
+  - Modify: `frontend/src/lib/types/contentBlock.ts` (add BacktestBlock)
+  - Create: `frontend/src/lib/components/blocks/BacktestBlock.svelte`
+  - Modify: `frontend/src/lib/components/blocks/ContentBlockRenderer.svelte`
+  - Tests: Snapshot test with mock backtest data.
+
+---
+
+## Phase 2: Data & Analysis
+
+- [ ] **T-201**: Economic Calendar Tool
+  - Status: PENDING
+  - Spec: Tool `get_economic_calendar` — upcoming high-impact events (FOMC, NFP, CPI, ECB, BOJ). Return TableBlock with date, event, forecast, previous, impact level.
+  - Create: `frontend/src/lib/server/tools/economicCalendar.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock API response, verify table format, timezone handling.
+
+- [ ] **T-202**: Sentiment Analysis Tool
+  - Status: PENDING
+  - Spec: Tool `get_sentiment` — aggregates Fear & Greed (existing), social sentiment via web search, funding rates (Binance/Bybit), long/short ratios. Returns GaugeBlock + MetricCardBlock.
+  - Create: `frontend/src/lib/server/tools/sentiment.tool.ts`, `frontend/src/lib/server/data/sentiment.data.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock each data source, verify aggregation.
+
+- [ ] **T-203**: Multi-Source OHLCV Provider
+  - Status: PENDING
+  - Spec: Provider pattern for OHLCV — Binance, Yahoo Finance, CoinGecko with auto-fallback. Normalize to OHLCV[] type. Support 1m to 1M timeframes.
+  - Create: `frontend/src/lib/server/data/ohlcvProvider.ts`, `ohlcvProvider.test.ts`
+  - Modify: `frontend/src/lib/server/tools/charts.tool.ts`, `gold.tool.ts` (use provider)
+  - Tests: Fallback chain, normalization, error handling.
+
+- [ ] **T-204**: On-Chain Data Tool
+  - Status: PENDING
+  - Spec: Tool `get_onchain_data` — BTC/ETH on-chain: active addresses, exchange flows, MVRV, NUPL, hash rate. Free APIs (Blockchain.com, Glassnode public). Returns MetricCardBlock.
+  - Create: `frontend/src/lib/server/tools/onchain.tool.ts`, `frontend/src/lib/server/data/onchain.data.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock API responses, verify metric calculations.
+
+- [ ] **T-205**: Derivatives Data Tool
+  - Status: PENDING
+  - Spec: Tool `get_derivatives_data` — open interest, funding rates, liquidations, options max pain, put/call ratio. Binance/Deribit public APIs. Returns TableBlock + MetricCardBlock.
+  - Create: `frontend/src/lib/server/tools/derivatives.tool.ts`, `frontend/src/lib/server/data/derivatives.data.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock Binance futures API, verify OI aggregation.
+
+- [ ] **T-206**: Market Breadth Dashboard
+  - Status: PENDING
+  - Spec: Dashboard section — advance/decline ratio, % above 200 SMA, sector rotation heatmap, relative strength by sector (XLF, XLK, XLE ETFs via Yahoo Finance).
+  - Create: `frontend/src/lib/server/data/breadth.data.ts`, `frontend/src/lib/components/dashboard/MarketBreadth.svelte`
+  - Modify: `frontend/src/routes/dashboard/+page.svelte`, `frontend/src/routes/api/dashboard/+server.ts`
+  - Tests: Breadth calculations, mock Yahoo Finance.
+
+---
+
+## Phase 3: Risk & Portfolio
+
+- [ ] **T-301**: Position Size Calculator Tool
+  - Status: PENDING
+  - Spec: Tool `calculate_position_size` — fixed fractional, Kelly criterion, volatility-adjusted (ATR), equal risk contribution. Input: account size, risk %, entry, stop, instrument type. Returns MetricCardBlock.
+  - Create: `frontend/src/lib/server/tools/positionSize.tool.ts`, `frontend/src/lib/server/risk/positionSizing.ts`, `positionSizing.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Verify each method against known calculations.
+
+- [ ] **T-302**: Portfolio Tracker
+  - Status: PENDING
+  - Spec: Persistent portfolio in Supabase — positions (entry, size, current price, PnL), closed trades (R-multiple), equity curve. Tool `portfolio_snapshot`. Dashboard widget.
+  - Create: `frontend/src/lib/server/portfolio/tracker.ts`, `tracker.test.ts`, `frontend/src/lib/server/tools/portfolio.tool.ts`
+  - Create: `frontend/src/lib/types/portfolio.ts`, `frontend/sql/portfolio.sql`
+  - Create: `frontend/src/lib/components/dashboard/PortfolioWidget.svelte`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: CRUD, PnL calculations, equity curve generation.
+
+- [ ] **T-303**: Drawdown Monitor
+  - Status: PENDING | Depends: T-302
+  - Spec: Real-time risk monitoring — current drawdown %, daily loss limit, max open risk, correlation-aware portfolio risk. Alert on threshold breach. GaugeBlock for risk level.
+  - Create: `frontend/src/lib/server/risk/drawdownMonitor.ts`, `drawdownMonitor.test.ts`
+  - Create: `frontend/src/lib/server/tools/riskMonitor.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Simulate drawdown scenarios, verify alerts.
+
+- [ ] **T-304**: Correlation Matrix Tool
+  - Status: PENDING
+  - Spec: Enhanced correlation — user-defined asset lists, rolling window (30/60/90/180d), Pearson correlations. Returns HeatmapBlock.
+  - Modify: `frontend/src/lib/server/tools/crossAsset.tool.ts` (extend)
+  - Create: `frontend/src/lib/server/risk/correlation.ts`, `correlation.test.ts`
+  - Tests: Known correlation values, edge cases.
+
+- [ ] **T-305**: Trade Journal with AI Review
+  - Status: PENDING | Depends: T-302
+  - Spec: Tools `log_trade` and `review_trades` — journaling with AI pattern analysis: best/worst days, common mistakes, emotional trading detection. Supabase `trade_journal` table.
+  - Create: `frontend/src/lib/server/tools/tradeJournal.tool.ts`, `frontend/src/lib/server/portfolio/journal.ts`, `journal.test.ts`
+  - Create: `frontend/sql/trade_journal.sql`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Journal CRUD, statistics calculation.
+
+---
+
+## Phase 4: UX & Automation
+
+- [ ] **T-401**: Alert System
+  - Status: PENDING
+  - Spec: Price alerts via chat ("alert me when BTC hits 100k"). Store in Supabase. Check via cron/server hooks. Notify via Telegram + in-app. Tools: `set_alert`, `list_alerts`, `delete_alert`.
+  - Create: `frontend/src/lib/server/alerts/alertEngine.ts`, `alertEngine.test.ts`
+  - Create: `frontend/src/lib/server/tools/alerts.tool.ts`, `frontend/src/lib/types/alert.ts`
+  - Create: `frontend/sql/alerts.sql`
+  - Modify: `frontend/src/lib/server/telegram.server.ts`, `agentLoop.server.ts`
+  - Tests: Alert creation, trigger conditions, notification dispatch.
+
+- [ ] **T-402**: Automated Signal Scanner
+  - Status: PENDING | Depends: T-102, T-401
+  - Spec: Scheduled scanner on watchlist assets. High-confluence signals auto-push TradeSetupBlock via Telegram. Configurable interval + min confluence score.
+  - Create: `frontend/src/lib/server/scanner/signalScanner.ts`, `signalScanner.test.ts`
+  - Create: `frontend/src/routes/api/scanner/+server.ts`
+  - Tests: Mock market data, verify detection.
+
+- [ ] **T-403**: Performance Analytics Dashboard
+  - Status: PENDING | Depends: T-302
+  - Spec: Enhanced `/analytics` — equity curve chart, monthly returns heatmap, win/loss distribution, R-multiple histogram, drawdown chart, Sharpe/Sortino over time.
+  - Modify: `frontend/src/routes/analytics/+page.svelte`
+  - Create: `frontend/src/lib/components/analytics/EquityCurve.svelte`, `MonthlyReturns.svelte`, `TradeDistribution.svelte`
+  - Create: `frontend/src/routes/api/analytics/performance/+server.ts`
+  - Tests: Chart data generation from mock trades.
+
+- [ ] **T-404**: Voice Input (Speech-to-Text)
+  - Status: PENDING
+  - Spec: Web Speech API in InputArea.svelte. Thai + English support. Mic button in input area.
+  - Modify: `frontend/src/lib/components/InputArea.svelte`
+  - Create: `frontend/src/lib/utils/speechInput.ts`
+  - Tests: Speech result handling.
+
+- [ ] **T-405**: Chat Export & Sharing
+  - Status: PENDING
+  - Spec: Export as PDF/Markdown. Share as public read-only link. Includes all content blocks.
+  - Create: `frontend/src/lib/utils/chatExport.ts`, `frontend/src/routes/api/chat/export/+server.ts`
+  - Create: `frontend/src/routes/share/[id]/+page.svelte`
+  - Modify: `frontend/src/lib/components/ChatArea.svelte`
+  - Tests: Markdown generation, export formats.
+
+---
+
+## Phase 5: Advanced Features
+
+- [ ] **T-501**: Chart Pattern Recognition
+  - Status: PENDING | Depends: T-101, T-203
+  - Spec: Heuristic pattern detection — H&S, double top/bottom, triangles, flags, wedges, cup & handle. Annotate on ChartBlock.
+  - Create: `frontend/src/lib/server/indicators/patterns.ts`, `patterns.test.ts`
+  - Create: `frontend/src/lib/server/tools/patternScan.tool.ts`
+  - Modify: `frontend/src/lib/types/contentBlock.ts` (PatternAnnotation), `agentLoop.server.ts`
+  - Tests: Known pattern formations, detection accuracy.
+
+- [ ] **T-502**: Multi-Timeframe Analysis Tool
+  - Status: PENDING | Depends: T-101, T-203
+  - Spec: Tool `multi_timeframe_analysis` — analyze across 1D, 4H, 1H, 15M simultaneously. Trend alignment, key levels per TF, confluence zones. Returns HeatmapBlock + ChartBlocks.
+  - Create: `frontend/src/lib/server/tools/multiTimeframe.tool.ts`, `frontend/src/lib/server/indicators/multiTF.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock multi-TF data, verify trend alignment.
+
+- [ ] **T-503**: Order Flow Analysis
+  - Status: PENDING
+  - Spec: Tool `get_order_flow` — whale tracking, order book depth, CVD, buy/sell volume ratio. Binance depth API + Blockchain.com.
+  - Create: `frontend/src/lib/server/tools/orderFlow.tool.ts`, `frontend/src/lib/server/data/orderFlow.data.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Mock order book, CVD calculation.
+
+- [ ] **T-504**: Strategy Marketplace
+  - Status: PENDING | Depends: T-103, T-104
+  - Spec: Publish strategies to shared marketplace. Browse, fork, backtest community strategies. Rate & review. RLS per user.
+  - Create: `frontend/src/routes/strategies/+page.svelte`, `[id]/+page.svelte`
+  - Create: `frontend/src/routes/api/strategies/+server.ts`
+  - Create: `frontend/src/lib/components/strategies/StrategyCard.svelte`, `StrategyList.svelte`
+  - Create: `frontend/sql/published_strategies.sql`
+  - Tests: CRUD, publish/fork, access control.
+
+- [ ] **T-505**: AI Strategy Optimizer
+  - Status: PENDING | Depends: T-103, T-104
+  - Spec: LLM suggests parameter optimizations from backtest results. Grid search on key params, AI analyzes robust vs overfit regions. Tool: `optimize_strategy`.
+  - Create: `frontend/src/lib/server/backtest/optimizer.ts`, `optimizer.test.ts`
+  - Create: `frontend/src/lib/server/tools/strategyOptimizer.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Parameter sweep, robustness scoring.
+
+- [ ] **T-506**: Real-Time WebSocket Price Feed
+  - Status: PENDING
+  - Spec: Binance WebSocket for real-time prices. Multi-symbol support. Reconnect with exponential backoff. Feed into dashboard + alerts.
+  - Create: `frontend/src/lib/server/websocket/priceFeed.ts`, `priceFeed.test.ts`
+  - Modify: `frontend/src/lib/components/dashboard/DashboardMiniChart.svelte`, `WatchlistBar.svelte`
+  - Tests: Mock WebSocket, reconnect logic.
+
+---
+
+## Completed
+<!-- Tasks move here when done -->
+
+## Session Notes
+
+### Session 2026-03-22
+- Completed: T-101 Technical Indicator Engine
+- Result: 20 indicators (SMA, EMA, RSI, MACD, BB, ATR, Stochastic, ADX, OBV, VWAP, Ichimoku, Fibonacci, Pivot Points, Williams %R, CCI, MFI, Parabolic SAR, Donchian, Keltner, SuperTrend) in `frontend/src/lib/server/indicators/engine.ts`. 69 tests all passing. charts.tool.ts updated to import from engine.
+- Issues: None
+- Next: T-102 Signal Generator (depends on T-101 ✓)
+
+- Completed: T-102 Signal Generator Tool
+- Result: `confluence.ts` with 8 detectors (MA crossover ×2, trend alignment, RSI divergence, MACD cross, Bollinger breakout/squeeze, S/R touch via pivot points, SuperTrend flip, Stochastic cross). `signals.tool.ts` registers `generate_signals` tool — fetches OHLCV from Binance/Yahoo, runs all detectors, returns MetricCardBlock + TradeSetupBlock when confluenceScore ≥ 4. 36 tests in `confluence.test.ts`, all passing. Total: 340 tests.
+- Issues: agentLoop.server.test.ts needed new `vi.mock('./tools/signals.tool', () => ({}))` to pass
+- Next: T-103 Strategy Definition Schema (no hard dependency, can start any time)

@@ -15,6 +15,7 @@ vi.mock('./tools/webExtract.tool', () => ({}));
 vi.mock('./tools/webCrawl.tool', () => ({}));
 vi.mock('./tools/memory.tool', () => ({}));
 vi.mock('./tools/handoff.tool', () => ({}));
+vi.mock('./tools/signals.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
