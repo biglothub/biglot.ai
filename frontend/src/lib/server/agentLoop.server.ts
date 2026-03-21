@@ -25,6 +25,7 @@ import './tools/backtest.tool';
 import './tools/economicCalendar.tool';
 import './tools/sentiment.tool';
 import './tools/onchain.tool';
+import './tools/derivatives.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
