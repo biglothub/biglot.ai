@@ -143,6 +143,7 @@
                             {#if message.role === "assistant"}
                                 {@const sourcesBlock = message.contentBlocks?.find((b): b is SourcesBlockType => b.type === 'sources')}
                                 {@const otherBlocks = message.contentBlocks?.filter((b) => b.type !== 'sources')}
+                                {@const isStreaming = chatState.isLoading && i === chatState.messages.length - 1}
                                 {#if otherBlocks?.length}
                                     {#each otherBlocks as block}
                                         <ContentBlockRenderer {block} />
@@ -150,10 +151,19 @@
                                 {/if}
                                 {#if message.content}
                                     <div class="inline-sources-row">
-                                        <Markdown content={message.content} />
+                                        <div class="streaming-wrapper" class:is-streaming={isStreaming}>
+                                            <Markdown content={message.content} />
+                                            {#if isStreaming}
+                                                <span class="streaming-cursor"></span>
+                                            {/if}
+                                        </div>
                                         {#if sourcesBlock}
                                             <SourcesBlock sources={sourcesBlock.sources} />
                                         {/if}
+                                    </div>
+                                {:else if isStreaming}
+                                    <div class="streaming-wrapper is-streaming">
+                                        <span class="streaming-cursor"></span>
                                     </div>
                                 {:else if sourcesBlock}
                                     <SourcesBlock sources={sourcesBlock.sources} />
@@ -255,3 +265,38 @@
         {/each}
     </div>
 </div>
+
+<style>
+    /* ── Streaming cursor (ChatGPT-style blinking caret) ── */
+    .streaming-wrapper {
+        display: inline;
+    }
+
+    .streaming-cursor {
+        display: inline-block;
+        width: 7px;
+        height: 1.1em;
+        margin-left: 2px;
+        background: currentColor;
+        opacity: 0.7;
+        border-radius: 1px;
+        vertical-align: text-bottom;
+        animation: blink-cursor 0.6s steps(2) infinite;
+    }
+
+    @keyframes blink-cursor {
+        0% { opacity: 0.7; }
+        50% { opacity: 0; }
+        100% { opacity: 0.7; }
+    }
+
+    /* Fade-in for new streaming content */
+    .streaming-wrapper.is-streaming :global(.markdown-body) {
+        animation: fadeInContent 0.15s ease-out;
+    }
+
+    @keyframes fadeInContent {
+        from { opacity: 0.6; }
+        to { opacity: 1; }
+    }
+</style>

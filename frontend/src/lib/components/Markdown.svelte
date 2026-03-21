@@ -23,10 +23,13 @@
             .replace(/>/g, "&gt;");
     }
 
-    /** True when the YAML looks like a tool-call progress block the LLM emitted as text */
+    /** True when the block looks like a tool-call the LLM emitted as text */
     function looksLikeToolCall(text: string): boolean {
         return /\[เรียกใช้[:：]/.test(text)
-            || /^\s*\[.*?(tool|call|เรียก)/im.test(text);
+            || /^\s*\[.*?(tool|call|เรียก)/im.test(text)
+            || /^\s*\{\s*"tool"\s*:/m.test(text)
+            || /^\s*\{\s*"function"\s*:/m.test(text)
+            || /^\s*\{\s*"name"\s*:.*"args"\s*:/ms.test(text);
     }
 
     /** True when the YAML contains chart / analysis / trade-setup structured keys */
@@ -135,8 +138,12 @@
 
     renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
         const isYaml = lang === 'yaml' || lang === 'yml';
+        const isToolLang = lang === 'tool_call' || lang === 'tool' || lang === 'function_call';
 
-        // Strip tool-call progress text the LLM sometimes writes
+        // Strip tool-call blocks the LLM sometimes writes as text
+        if (isToolLang) {
+            return '';
+        }
         if ((isYaml || !lang) && looksLikeToolCall(text)) {
             return '';
         }

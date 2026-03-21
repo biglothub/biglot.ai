@@ -59,4 +59,11 @@
     <DiscussionBlock discussion={block} />
 {:else if block.type === "research_report"}
     <ResearchReportBlock report={block} />
+{:else if block.type === "backtest"}
+    {#await import("./BacktestBlock.svelte") then module}
+        {@const BacktestBlock = module.default}
+        <BacktestBlock {...block} />
+    {:catch}
+        <ErrorBlock message="Failed to load backtest renderer." />
+    {/await}
 {/if}

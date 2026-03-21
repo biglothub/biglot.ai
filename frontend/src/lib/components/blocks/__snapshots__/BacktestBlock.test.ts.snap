@@ -1,0 +1,81 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BacktestBlock snapshot > metrics snapshot 1`] = `
+{
+  "avgRMultiple": 0.65,
+  "expectancy": 87.5,
+  "maxConsecutiveLosses": 3,
+  "maxDrawdown": 12.3,
+  "profitFactor": 2.1,
+  "sharpe": 1.8,
+  "totalReturn": 42.5,
+  "totalTrades": 24,
+  "winRate": 58.3,
+}
+`;
+
+exports[`BacktestBlock snapshot > mock block matches snapshot 1`] = `
+{
+  "endTime": 1702592000,
+  "equity": [
+    {
+      "drawdownPct": 0,
+      "equity": 10000,
+      "time": 1700000000,
+    },
+    {
+      "drawdownPct": 0,
+      "equity": 10499.8,
+      "time": 1700086400,
+    },
+    {
+      "drawdownPct": 0.952,
+      "equity": 10399.75,
+      "time": 1700259200,
+    },
+  ],
+  "finalCapital": 14250,
+  "initialCapital": 10000,
+  "metrics": {
+    "avgRMultiple": 0.65,
+    "expectancy": 87.5,
+    "maxConsecutiveLosses": 3,
+    "maxDrawdown": 12.3,
+    "profitFactor": 2.1,
+    "sharpe": 1.8,
+    "totalReturn": 42.5,
+    "totalTrades": 24,
+    "winRate": 58.3,
+  },
+  "startTime": 1700000000,
+  "symbol": "BTCUSDT",
+  "timeframe": "4h",
+  "trades": [
+    {
+      "direction": "long",
+      "entryPrice": 42000,
+      "entryTime": 1700000000,
+      "exitPrice": 44100,
+      "exitReason": "take_profit",
+      "exitTime": 1700086400,
+      "pnl": 499.8,
+      "pnlPct": 5,
+      "rMultiple": 2,
+      "size": 0.238,
+    },
+    {
+      "direction": "long",
+      "entryPrice": 43500,
+      "entryTime": 1700172800,
+      "exitPrice": 43065,
+      "exitReason": "stop_loss",
+      "exitTime": 1700259200,
+      "pnl": -100.05,
+      "pnlPct": -1,
+      "rMultiple": -1,
+      "size": 0.23,
+    },
+  ],
+  "type": "backtest",
+}
+`;

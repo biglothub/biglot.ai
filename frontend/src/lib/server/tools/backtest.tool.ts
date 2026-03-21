@@ -3,9 +3,9 @@
 
 import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
-import type { OHLCV, MetricCardBlock, TableBlock } from '$lib/types/contentBlock';
+import type { OHLCV, BacktestBlock, BacktestMetricsSummary } from '$lib/types/contentBlock';
 import type { Strategy } from '$lib/types/strategy';
-import type { BacktestResult, WalkForwardResult } from '$lib/types/backtest';
+import type { BacktestResult, WalkForwardResult, BacktestMetrics } from '$lib/types/backtest';
 import { runBacktest, runWalkForward } from '../backtest/engine';
 import { isForexOrCommodity, fetchYahooOHLCV } from './yahooFinance';
 
@@ -76,58 +76,41 @@ function fmtPct(n: number): string {
 	return `${n >= 0 ? '+' : ''}${fmt(n)}%`;
 }
 
-function metricsBlock(result: BacktestResult, title: string): MetricCardBlock {
-	const m = result.metrics;
+// ─── Block Builders ───────────────────────────────────────────────────────────
+
+function toMetricsSummary(m: BacktestMetrics): BacktestMetricsSummary {
 	return {
-		type: 'metric_card',
-		title,
-		metrics: [
-			{ label: 'Total Return', value: fmtPct(m.totalReturn), direction: m.totalReturn >= 0 ? 'up' : 'down' },
-			{ label: 'CAGR', value: fmtPct(m.cagr), direction: m.cagr >= 0 ? 'up' : 'down' },
-			{ label: 'Max Drawdown', value: `-${fmt(m.maxDrawdown)}%`, direction: 'down' },
-			{ label: 'Sharpe', value: fmt(m.sharpe), direction: m.sharpe >= 1 ? 'up' : m.sharpe >= 0 ? 'neutral' : 'down' },
-			{ label: 'Sortino', value: fmt(m.sortino), direction: m.sortino >= 1 ? 'up' : m.sortino >= 0 ? 'neutral' : 'down' },
-			{ label: 'Win Rate', value: `${fmt(m.winRate)}%`, direction: m.winRate >= 50 ? 'up' : 'down' },
-			{ label: 'Profit Factor', value: fmt(m.profitFactor), direction: m.profitFactor >= 1.5 ? 'up' : m.profitFactor >= 1 ? 'neutral' : 'down' },
-			{ label: 'Avg R-Multiple', value: fmt(m.avgRMultiple), direction: m.avgRMultiple >= 0 ? 'up' : 'down' },
-			{ label: 'Total Trades', value: String(m.totalTrades), direction: 'neutral' },
-			{ label: 'Max Consec. Losses', value: String(m.maxConsecutiveLosses), direction: m.maxConsecutiveLosses >= 5 ? 'down' : 'neutral' },
-			{ label: 'Expectancy/Trade', value: `$${fmt(m.expectancy)}`, direction: m.expectancy >= 0 ? 'up' : 'down' },
-		],
+		totalReturn: m.totalReturn,
+		maxDrawdown: m.maxDrawdown,
+		sharpe: m.sharpe,
+		winRate: m.winRate,
+		totalTrades: m.totalTrades,
+		profitFactor: m.profitFactor,
+		avgRMultiple: m.avgRMultiple,
+		expectancy: m.expectancy,
+		maxConsecutiveLosses: m.maxConsecutiveLosses,
 	};
 }
 
-function tradeTableBlock(result: BacktestResult): TableBlock {
-	const rows = result.trades.slice(0, 50).map((t) => [
-		new Date(t.entryTime * 1000).toISOString().split('T')[0],
-		new Date(t.exitTime * 1000).toISOString().split('T')[0],
-		t.direction.toUpperCase(),
-		fmt(t.entryPrice, 4),
-		fmt(t.exitPrice, 4),
-		fmtPct(t.pnlPct),
-		fmt(t.rMultiple),
-		t.exitReason.replace(/_/g, ' '),
-	]);
-
-	return {
-		type: 'table',
-		title: `Trade Log (${result.trades.length} trades${result.trades.length > 50 ? ', showing first 50' : ''})`,
-		headers: ['Entry Date', 'Exit Date', 'Dir', 'Entry', 'Exit', 'P&L %', 'R-Mult', 'Exit Reason'],
-		rows,
+function toBacktestBlock(result: BacktestResult, wf?: WalkForwardResult): BacktestBlock {
+	const block: BacktestBlock = {
+		type: 'backtest',
+		symbol: result.symbol,
+		timeframe: result.strategy.timeframe,
+		initialCapital: result.initialCapital,
+		finalCapital: result.finalCapital,
+		startTime: result.startTime,
+		endTime: result.endTime,
+		trades: result.trades,
+		equity: result.equity,
+		metrics: toMetricsSummary(result.metrics),
 	};
-}
-
-function walkForwardSummaryBlock(wf: WalkForwardResult): MetricCardBlock {
-	return {
-		type: 'metric_card',
-		title: 'Walk-Forward Analysis',
-		metrics: [
-			{ label: 'In-Sample Return (70%)', value: fmtPct(wf.inSample.metrics.totalReturn), direction: wf.inSample.metrics.totalReturn >= 0 ? 'up' : 'down' },
-			{ label: 'Out-of-Sample Return (30%)', value: fmtPct(wf.outOfSample.metrics.totalReturn), direction: wf.outOfSample.metrics.totalReturn >= 0 ? 'up' : 'down' },
-			{ label: 'Performance Degradation', value: fmtPct(wf.degradationPct), direction: wf.degradationPct > 50 ? 'down' : wf.degradationPct > 0 ? 'neutral' : 'up' },
-			{ label: 'Overfit Risk', value: wf.degradationPct > 80 ? 'High' : wf.degradationPct > 40 ? 'Medium' : 'Low', direction: wf.degradationPct > 80 ? 'down' : wf.degradationPct > 40 ? 'neutral' : 'up' },
-		],
-	};
+	if (wf) {
+		block.inSampleMetrics = toMetricsSummary(wf.inSample.metrics);
+		block.outOfSampleMetrics = toMetricsSummary(wf.outOfSample.metrics);
+		block.degradationPct = wf.degradationPct;
+	}
+	return block;
 }
 
 // ─── Tool Registration ────────────────────────────────────────────────────────
@@ -209,31 +192,20 @@ registerTool({
 
 		if (walkForward) {
 			const wf = runWalkForward({ strategy, ohlcv, symbol: displaySymbol, initialCapital });
-			const contentBlocks = [
-				walkForwardSummaryBlock(wf),
-				metricsBlock(wf.inSample, `In-Sample Performance (${new Date(wf.inSample.startTime * 1000).toISOString().split('T')[0]} – ${new Date(wf.inSample.endTime * 1000).toISOString().split('T')[0]})`),
-				metricsBlock(wf.outOfSample, `Out-of-Sample Performance (${new Date(wf.outOfSample.startTime * 1000).toISOString().split('T')[0]} – ${new Date(wf.outOfSample.endTime * 1000).toISOString().split('T')[0]})`),
-				tradeTableBlock(wf.combined),
-			];
+			const block = toBacktestBlock(wf.combined, wf);
 			const summary = `Walk-forward backtest of "${strategy.name}" on ${displaySymbol} (${interval}). ` +
 				`In-sample: ${fmtPct(wf.inSample.metrics.totalReturn)} return, ${fmt(wf.inSample.metrics.sharpe)} Sharpe. ` +
 				`Out-of-sample: ${fmtPct(wf.outOfSample.metrics.totalReturn)} return, ${fmt(wf.outOfSample.metrics.sharpe)} Sharpe. ` +
 				`Degradation: ${fmtPct(wf.degradationPct)}.`;
-
-			return { success: true, contentBlocks, textSummary: summary };
+			return { success: true, contentBlocks: [block], textSummary: summary };
 		}
 
 		const result = runBacktest({ strategy, ohlcv, symbol: displaySymbol, initialCapital });
-		const contentBlocks = [
-			metricsBlock(result, `Backtest: ${strategy.name} on ${displaySymbol} (${interval})`),
-			tradeTableBlock(result),
-		];
-
+		const block = toBacktestBlock(result);
 		const m = result.metrics;
 		const summary = `Backtest of "${strategy.name}" on ${displaySymbol} (${interval}, ${ohlcv.length} bars). ` +
 			`Total return: ${fmtPct(m.totalReturn)}, Max drawdown: ${fmt(m.maxDrawdown)}%, ` +
 			`Sharpe: ${fmt(m.sharpe)}, Win rate: ${fmt(m.winRate)}%, ${m.totalTrades} trades.`;
-
-		return { success: true, contentBlocks, textSummary: summary };
+		return { success: true, contentBlocks: [block], textSummary: summary };
 	},
 });

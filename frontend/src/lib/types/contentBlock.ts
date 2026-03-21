@@ -216,6 +216,57 @@ export type SourcesBlock = {
 	}[];
 };
 
+// --- Backtest Block (T-105) ---
+
+export type BacktestTrade = {
+	entryTime: number;
+	exitTime: number;
+	direction: 'long' | 'short';
+	entryPrice: number;
+	exitPrice: number;
+	size: number;
+	pnl: number;
+	pnlPct: number;
+	rMultiple: number;
+	exitReason: 'stop_loss' | 'take_profit' | 'trailing_stop' | 'indicator' | 'time_based' | 'end_of_data' | 'max_drawdown';
+};
+
+export type BacktestEquityPoint = {
+	time: number;
+	equity: number;
+	drawdownPct: number;
+};
+
+export type BacktestMetricsSummary = {
+	totalReturn: number;
+	maxDrawdown: number;
+	sharpe: number;
+	winRate: number;
+	totalTrades: number;
+	profitFactor: number;
+	avgRMultiple: number;
+	expectancy: number;
+	maxConsecutiveLosses: number;
+};
+
+export type BacktestBlock = {
+	type: 'backtest';
+	symbol: string;
+	timeframe: string;
+	initialCapital: number;
+	finalCapital: number;
+	startTime: number;
+	endTime: number;
+	trades: BacktestTrade[];
+	equity: BacktestEquityPoint[];
+	metrics: BacktestMetricsSummary;
+	/** In-sample metrics if walk-forward was run */
+	inSampleMetrics?: BacktestMetricsSummary;
+	/** Out-of-sample metrics if walk-forward was run */
+	outOfSampleMetrics?: BacktestMetricsSummary;
+	degradationPct?: number;
+};
+
 export type ContentBlock =
 	| TextBlock
 	| ImageBlock
@@ -231,7 +282,8 @@ export type ContentBlock =
 	| TradeSetupBlock
 	| SourcesBlock
 	| DiscussionBlock
-	| ResearchReportBlock;
+	| ResearchReportBlock
+	| BacktestBlock;
 
 export type ContentBlockType = ContentBlock['type'];
 
