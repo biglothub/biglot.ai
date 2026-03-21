@@ -17,6 +17,7 @@ vi.mock('./tools/memory.tool', () => ({}));
 vi.mock('./tools/handoff.tool', () => ({}));
 vi.mock('./tools/signals.tool', () => ({}));
 vi.mock('./tools/backtest.tool', () => ({}));
+vi.mock('./tools/economicCalendar.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
