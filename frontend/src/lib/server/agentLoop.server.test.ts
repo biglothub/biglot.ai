@@ -27,6 +27,7 @@ vi.mock('./tools/riskMonitor.tool', () => ({}));
 vi.mock('./tools/tradeJournal.tool', () => ({}));
 vi.mock('./tools/alerts.tool', () => ({}));
 vi.mock('./tools/patternScan.tool', () => ({}));
+vi.mock('./tools/multiTimeframe.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
