@@ -6,6 +6,7 @@
     import GoldHeroPanel from '$lib/components/dashboard/GoldHeroPanel.svelte';
     import MacroStrip from '$lib/components/dashboard/MacroStrip.svelte';
     import DashboardMiniChart from '$lib/components/dashboard/DashboardMiniChart.svelte';
+    import MarketBreadth from '$lib/components/dashboard/MarketBreadth.svelte';
     import {
         DASHBOARD_TIMEFRAMES,
         type DashboardResponse,
@@ -653,6 +654,19 @@
                             </p>
 
                             <MacroStrip macro={data.macro} chrome="embedded" />
+                        </section>
+
+                        <section class="dashboard-panel">
+                            <div class="panel-head">
+                                <div>
+                                    <p class="panel-eyebrow">Market breadth</p>
+                                    <h2 class="panel-title">Sector Rotation Heatmap</h2>
+                                </div>
+                                <p class="panel-caption">
+                                    US equity sector ETF performance relative to SPY
+                                </p>
+                            </div>
+                            <MarketBreadth data={data.breadth} />
                         </section>
                     </div>
                 {/if}

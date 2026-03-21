@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { fetchGoldPriceData, fetchGoldOHLCV } from '$lib/server/data/gold.data';
 import { fetchMacroData } from '$lib/server/data/macro.data';
 import { fetchCotData } from '$lib/server/data/cot.data';
+import { fetchBreadthSnapshot } from '$lib/server/data/breadth.data';
 import type {
 	DashboardAssessment,
 	DashboardDriver,
@@ -412,17 +413,19 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json(cached.data);
 	}
 
-	const [goldResult, macroResult, cotResult, chartResult] = await Promise.allSettled([
+	const [goldResult, macroResult, cotResult, chartResult, breadthResult] = await Promise.allSettled([
 		fetchGoldPriceData(),
 		fetchMacroData(),
 		fetchCotData(),
-		fetchGoldOHLCV(requestedTimeframe)
+		fetchGoldOHLCV(requestedTimeframe),
+		fetchBreadthSnapshot()
 	]);
 
 	const gold = goldResult.status === 'fulfilled' ? goldResult.value : null;
 	const macro = macroResult.status === 'fulfilled' ? macroResult.value : null;
 	const cot = cotResult.status === 'fulfilled' ? cotResult.value : null;
 	const rawChart = chartResult.status === 'fulfilled' ? chartResult.value : null;
+	const breadth = breadthResult.status === 'fulfilled' ? breadthResult.value : null;
 	const chart = rawChart
 		? {
 			ohlcv: rawChart.ohlcv,
@@ -450,6 +453,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		macro,
 		cot,
 		chart,
+		breadth,
 		assessment,
 		updatedAt: fetchedAt,
 		_meta

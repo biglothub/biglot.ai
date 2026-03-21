@@ -93,11 +93,28 @@ export interface DashboardChartData {
 	timeframe: DashboardTimeframe;
 }
 
+export interface SectorPerformance {
+	ticker: string;
+	name: string;
+	price: number;
+	change1d: number;
+	change1w: number;
+	change1m: number;
+	vsSpY1m: number;
+}
+
+export interface BreadthData {
+	sectors: SectorPerformance[];
+	spyChange1m: number;
+	fetchedAt: string;
+}
+
 export interface DashboardResponse {
 	gold: GoldPriceData | null;
 	macro: MacroData | null;
 	cot: CotData | null;
 	chart: DashboardChartData | null;
+	breadth: BreadthData | null;
 	assessment: DashboardAssessment;
 	updatedAt: string;
 	_meta: DashboardMeta;
