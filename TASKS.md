@@ -143,14 +143,15 @@
 
 ## Phase 4: UX & Automation
 
-- [ ] **T-401**: Alert System
-  - Status: PENDING
+- [x] **T-401**: Alert System
+  - Status: DONE
   - Spec: Price alerts via chat ("alert me when BTC hits 100k"). Store in Supabase. Check via cron/server hooks. Notify via Telegram + in-app. Tools: `set_alert`, `list_alerts`, `delete_alert`.
   - Create: `frontend/src/lib/server/alerts/alertEngine.ts`, `alertEngine.test.ts`
   - Create: `frontend/src/lib/server/tools/alerts.tool.ts`, `frontend/src/lib/types/alert.ts`
   - Create: `frontend/sql/alerts.sql`
   - Modify: `frontend/src/lib/server/telegram.server.ts`, `agentLoop.server.ts`
   - Tests: Alert creation, trigger conditions, notification dispatch.
+  - Session notes (2026-03-22): price_alerts table with above/below/crosses conditions. alertEngine.ts: createAlert, listAlerts, deleteAlert, markAlertTriggered, checkAlerts. shouldTrigger handles all conditions including crosses with prevPrice. Tools: set_alert, list_alerts, delete_alert. 26 tests, 806 total passing.
 
 - [ ] **T-402**: Automated Signal Scanner
   - Status: PENDING | Depends: T-102, T-401
