@@ -122,12 +122,13 @@
   - Tests: Simulate drawdown scenarios, verify alerts.
   - Session notes (2026-03-22): calcCurrentDrawdown (peak equity tracking), calcDailyPnL (today realised+unrealised), calcOpenRisk (stop-distance × size per position), buildRiskSnapshot (composite 0-100 score with weighted dimensions). Tool: monitor_portfolio_risk returns GaugeBlock + MetricCard + alerts table. 31 tests, 734 total passing.
 
-- [ ] **T-304**: Correlation Matrix Tool
-  - Status: PENDING
+- [x] **T-304**: Correlation Matrix Tool
+  - Status: DONE
   - Spec: Enhanced correlation — user-defined asset lists, rolling window (30/60/90/180d), Pearson correlations. Returns HeatmapBlock.
   - Modify: `frontend/src/lib/server/tools/crossAsset.tool.ts` (extend)
   - Create: `frontend/src/lib/server/risk/correlation.ts`, `correlation.test.ts`
   - Tests: Known correlation values, edge cases.
+  - Session notes (2026-03-22): risk/correlation.ts with pearsonCorrelation, toReturns, alignSeries, buildCorrelationMatrix (n×n symmetric, minPoints filter). get_correlation_matrix tool appended to crossAsset.tool.ts — symbol aliases, 30/60/90/180d windows, HeatmapBlock output. 28 tests, 762 total passing.
 
 - [ ] **T-305**: Trade Journal with AI Review
   - Status: PENDING | Depends: T-302
