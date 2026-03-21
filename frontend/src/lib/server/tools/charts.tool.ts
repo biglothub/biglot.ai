@@ -3,6 +3,7 @@ import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
 import type { OHLCV } from '$lib/types/contentBlock';
 import { isForexOrCommodity, fetchYahooOHLCV } from './yahooFinance';
+import { sma, ema, rsi, macd, bollingerBands } from '../indicators/engine';
 
 const BINANCE_BASE = 'https://api.binance.com/api/v3';
 
@@ -43,151 +44,7 @@ function normalizeInterval(interval: string): string {
 	return INTERVAL_MAP[lower] || '4h';
 }
 
-// --- RSI calculation ---
-function calculateRSI(closes: number[], period = 14): number[] {
-	const rsi: number[] = [];
-	if (closes.length < period + 1) return rsi;
-
-	let avgGain = 0;
-	let avgLoss = 0;
-
-	for (let i = 1; i <= period; i++) {
-		const diff = closes[i] - closes[i - 1];
-		if (diff > 0) avgGain += diff;
-		else avgLoss += Math.abs(diff);
-	}
-	avgGain /= period;
-	avgLoss /= period;
-
-	// Fill initial empty values
-	for (let i = 0; i < period; i++) rsi.push(NaN);
-
-	const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-	rsi.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rs));
-
-	for (let i = period + 1; i < closes.length; i++) {
-		const diff = closes[i] - closes[i - 1];
-		const gain = diff > 0 ? diff : 0;
-		const loss = diff < 0 ? Math.abs(diff) : 0;
-		avgGain = (avgGain * (period - 1) + gain) / period;
-		avgLoss = (avgLoss * (period - 1) + loss) / period;
-		const rsVal = avgLoss === 0 ? 100 : avgGain / avgLoss;
-		rsi.push(avgLoss === 0 ? 100 : 100 - 100 / (1 + rsVal));
-	}
-
-	return rsi;
-}
-
-// --- SMA calculation ---
-function calculateSMA(data: number[], period: number): number[] {
-	const result: number[] = [];
-	for (let i = 0; i < data.length; i++) {
-		if (i < period - 1) {
-			result.push(NaN);
-		} else {
-			let sum = 0;
-			for (let j = i - period + 1; j <= i; j++) sum += data[j];
-			result.push(sum / period);
-		}
-	}
-	return result;
-}
-
-// --- EMA calculation ---
-function calculateEMA(data: number[], period: number): number[] {
-	const result: number[] = [];
-	const multiplier = 2 / (period + 1);
-
-	for (let i = 0; i < data.length; i++) {
-		if (i < period - 1) {
-			result.push(NaN);
-		} else if (i === period - 1) {
-			let sum = 0;
-			for (let j = 0; j < period; j++) sum += data[j];
-			result.push(sum / period);
-		} else {
-			result.push((data[i] - result[i - 1]) * multiplier + result[i - 1]);
-		}
-	}
-	return result;
-}
-
-// --- MACD calculation ---
-function calculateMACD(
-	closes: number[],
-	fastPeriod = 12,
-	slowPeriod = 26,
-	signalPeriod = 9
-): { macd: number[]; signal: number[]; histogram: number[] } {
-	const emaFast = calculateEMA(closes, fastPeriod);
-	const emaSlow = calculateEMA(closes, slowPeriod);
-
-	const macdLine: number[] = [];
-	for (let i = 0; i < closes.length; i++) {
-		if (isNaN(emaFast[i]) || isNaN(emaSlow[i])) {
-			macdLine.push(NaN);
-		} else {
-			macdLine.push(emaFast[i] - emaSlow[i]);
-		}
-	}
-
-	// Signal line = EMA of MACD line
-	const validMacd = macdLine.filter((v) => !isNaN(v));
-	const signalFromValid = calculateEMA(validMacd, signalPeriod);
-
-	const signal: number[] = [];
-	let validIdx = 0;
-	for (let i = 0; i < macdLine.length; i++) {
-		if (isNaN(macdLine[i])) {
-			signal.push(NaN);
-		} else {
-			signal.push(signalFromValid[validIdx] ?? NaN);
-			validIdx++;
-		}
-	}
-
-	const histogram: number[] = [];
-	for (let i = 0; i < macdLine.length; i++) {
-		if (isNaN(macdLine[i]) || isNaN(signal[i])) {
-			histogram.push(NaN);
-		} else {
-			histogram.push(macdLine[i] - signal[i]);
-		}
-	}
-
-	return { macd: macdLine, signal, histogram };
-}
-
-// --- Bollinger Bands ---
-function calculateBollingerBands(
-	closes: number[],
-	period = 20,
-	stdDev = 2
-): { upper: number[]; middle: number[]; lower: number[] } {
-	const sma = calculateSMA(closes, period);
-	const upper: number[] = [];
-	const middle: number[] = [];
-	const lower: number[] = [];
-
-	for (let i = 0; i < closes.length; i++) {
-		if (isNaN(sma[i])) {
-			upper.push(NaN);
-			middle.push(NaN);
-			lower.push(NaN);
-		} else {
-			let sumSq = 0;
-			for (let j = i - period + 1; j <= i; j++) {
-				sumSq += (closes[j] - sma[i]) ** 2;
-			}
-			const std = Math.sqrt(sumSq / period);
-			upper.push(sma[i] + stdDev * std);
-			middle.push(sma[i]);
-			lower.push(sma[i] - stdDev * std);
-		}
-	}
-
-	return { upper, middle, lower };
-}
+// Indicator calculations delegated to engine
 
 // --- Get Crypto Chart Tool ---
 
@@ -432,7 +289,6 @@ registerTool({
 		}
 
 		const closes = ohlcv.map((c) => c.close);
-		const times = ohlcv.map((c) => c.time);
 
 		const chartIndicators: {
 			name: string;
@@ -448,83 +304,71 @@ registerTool({
 		for (const ind of indicators) {
 			switch (ind) {
 				case 'rsi': {
-					const rsiValues = calculateRSI(closes);
+					const rsiValues = rsi(ohlcv);
 					const lastRSI = rsiValues[rsiValues.length - 1];
 					chartIndicators.push({
 						name: 'RSI (14)',
-						data: rsiValues
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: rsiValues,
 						color: '#8b5cf6',
 						overlay: false
 					});
-					tableRows.push(['RSI (14)', lastRSI?.toFixed(2) ?? 'N/A']);
-					summaryParts.push(`RSI(14): ${lastRSI?.toFixed(2) ?? 'N/A'}`);
+					tableRows.push(['RSI (14)', lastRSI?.value?.toFixed(2) ?? 'N/A']);
+					summaryParts.push(`RSI(14): ${lastRSI?.value?.toFixed(2) ?? 'N/A'}`);
 					break;
 				}
 				case 'macd': {
-					const { macd, signal, histogram } = calculateMACD(closes);
-					const lastMACD = macd[macd.length - 1];
-					const lastSignal = signal[signal.length - 1];
-					const lastHist = histogram[histogram.length - 1];
+					const macdResult = macd(ohlcv);
+					const lastMACD = macdResult.macd[macdResult.macd.length - 1];
+					const lastSignal = macdResult.signal[macdResult.signal.length - 1];
+					const lastHist = macdResult.histogram[macdResult.histogram.length - 1];
 					chartIndicators.push({
 						name: 'MACD',
-						data: macd
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: macdResult.macd,
 						color: '#3b82f6',
 						overlay: false
 					});
 					chartIndicators.push({
 						name: 'MACD Signal',
-						data: signal
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: macdResult.signal,
 						color: '#ef4444',
 						overlay: false
 					});
-					tableRows.push(['MACD', lastMACD?.toFixed(4) ?? 'N/A']);
-					tableRows.push(['MACD Signal', lastSignal?.toFixed(4) ?? 'N/A']);
-					tableRows.push(['MACD Histogram', lastHist?.toFixed(4) ?? 'N/A']);
+					tableRows.push(['MACD', lastMACD?.value?.toFixed(4) ?? 'N/A']);
+					tableRows.push(['MACD Signal', lastSignal?.value?.toFixed(4) ?? 'N/A']);
+					tableRows.push(['MACD Histogram', lastHist?.value?.toFixed(4) ?? 'N/A']);
 					summaryParts.push(
-						`MACD: ${lastMACD?.toFixed(4)}, Signal: ${lastSignal?.toFixed(4)}, Hist: ${lastHist?.toFixed(4)}`
+						`MACD: ${lastMACD?.value?.toFixed(4)}, Signal: ${lastSignal?.value?.toFixed(4)}, Hist: ${lastHist?.value?.toFixed(4)}`
 					);
 					break;
 				}
 				case 'bb': {
-					const { upper, middle, lower } = calculateBollingerBands(closes);
-					const lastUpper = upper[upper.length - 1];
-					const lastMiddle = middle[middle.length - 1];
-					const lastLower = lower[lower.length - 1];
+					const bbResult = bollingerBands(ohlcv);
+					const lastUpper = bbResult.upper[bbResult.upper.length - 1];
+					const lastMiddle = bbResult.middle[bbResult.middle.length - 1];
+					const lastLower = bbResult.lower[bbResult.lower.length - 1];
 					chartIndicators.push({
 						name: 'BB Upper',
-						data: upper
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: bbResult.upper,
 						color: '#94a3b8',
 						overlay: true
 					});
 					chartIndicators.push({
 						name: 'BB Middle',
-						data: middle
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: bbResult.middle,
 						color: '#64748b',
 						overlay: true
 					});
 					chartIndicators.push({
 						name: 'BB Lower',
-						data: lower
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: bbResult.lower,
 						color: '#94a3b8',
 						overlay: true
 					});
-					tableRows.push(['BB Upper', lastUpper?.toFixed(2) ?? 'N/A']);
-					tableRows.push(['BB Middle (SMA20)', lastMiddle?.toFixed(2) ?? 'N/A']);
-					tableRows.push(['BB Lower', lastLower?.toFixed(2) ?? 'N/A']);
+					tableRows.push(['BB Upper', lastUpper?.value?.toFixed(2) ?? 'N/A']);
+					tableRows.push(['BB Middle (SMA20)', lastMiddle?.value?.toFixed(2) ?? 'N/A']);
+					tableRows.push(['BB Lower', lastLower?.value?.toFixed(2) ?? 'N/A']);
 					summaryParts.push(
-						`BB: Upper ${lastUpper?.toFixed(2)}, Middle ${lastMiddle?.toFixed(2)}, Lower ${lastLower?.toFixed(2)}`
+						`BB: Upper ${lastUpper?.value?.toFixed(2)}, Middle ${lastMiddle?.value?.toFixed(2)}, Lower ${lastLower?.value?.toFixed(2)}`
 					);
 					break;
 				}
@@ -532,7 +376,7 @@ registerTool({
 				case 'sma_50':
 				case 'sma_200': {
 					const period = parseInt(ind.split('_')[1], 10);
-					const smaValues = calculateSMA(closes, period);
+					const smaValues = sma(ohlcv, period);
 					const lastSMA = smaValues[smaValues.length - 1];
 					const colors: Record<number, string> = {
 						20: '#f59e0b',
@@ -541,31 +385,27 @@ registerTool({
 					};
 					chartIndicators.push({
 						name: `SMA ${period}`,
-						data: smaValues
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: smaValues,
 						color: colors[period] || '#6b7280',
 						overlay: true
 					});
-					tableRows.push([`SMA ${period}`, lastSMA?.toFixed(2) ?? 'N/A']);
-					summaryParts.push(`SMA${period}: ${lastSMA?.toFixed(2) ?? 'N/A'}`);
+					tableRows.push([`SMA ${period}`, lastSMA?.value?.toFixed(2) ?? 'N/A']);
+					summaryParts.push(`SMA${period}: ${lastSMA?.value?.toFixed(2) ?? 'N/A'}`);
 					break;
 				}
 				case 'ema_12':
 				case 'ema_26': {
 					const period = parseInt(ind.split('_')[1], 10);
-					const emaValues = calculateEMA(closes, period);
+					const emaValues = ema(ohlcv, period);
 					const lastEMA = emaValues[emaValues.length - 1];
 					chartIndicators.push({
 						name: `EMA ${period}`,
-						data: emaValues
-							.map((v, i) => ({ time: times[i], value: v }))
-							.filter((d) => !isNaN(d.value)),
+						data: emaValues,
 						color: period === 12 ? '#8b5cf6' : '#ec4899',
 						overlay: true
 					});
-					tableRows.push([`EMA ${period}`, lastEMA?.toFixed(2) ?? 'N/A']);
-					summaryParts.push(`EMA${period}: ${lastEMA?.toFixed(2) ?? 'N/A'}`);
+					tableRows.push([`EMA ${period}`, lastEMA?.value?.toFixed(2) ?? 'N/A']);
+					summaryParts.push(`EMA${period}: ${lastEMA?.value?.toFixed(2) ?? 'N/A'}`);
 					break;
 				}
 			}
