@@ -13,10 +13,23 @@
     let loading = $state(true);
     let interval: ReturnType<typeof setInterval>;
     let ws: WebSocket | null = null;
+    let flashSymbols = $state(new Set<string>());
+
+    // Reconnect state
+    let wsReconnectAttempt = 0;
+    let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let wsDestroyed = false;
+    let wsSymbols: string[] = [];
 
     const GOLD_SYMBOLS = new Set(['GC=F', 'SI=F']);
     // Symbols that can be streamed from Binance miniTicker (USDT pairs)
     const CRYPTO_WS_SYMBOLS = new Set(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']);
+
+    function calcWsReconnectDelay(attempt: number): number {
+        const base = Math.min(1000 * Math.pow(2, attempt), 30_000);
+        const jitter = base * 0.25 * (Math.random() * 2 - 1);
+        return Math.max(1000, Math.round(base + jitter));
+    }
 
     async function fetchWatchlist() {
         try {
@@ -31,24 +44,22 @@
     }
 
     /** Open Binance miniTicker WebSocket for crypto USDT pairs in the watchlist */
-    function openPriceFeed() {
-        if (typeof WebSocket === 'undefined') return;
+    function openPriceFeed(symbols: string[]): void {
+        if (wsDestroyed || typeof WebSocket === 'undefined' || symbols.length === 0) return;
+        if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
 
-        const cryptoSymbols = items
-            .map(i => i.symbol)
-            .filter(s => CRYPTO_WS_SYMBOLS.has(s));
-
-        if (cryptoSymbols.length === 0) return;
-
-        const streams = cryptoSymbols.map(s => `${s.toLowerCase()}@miniTicker`).join('/');
+        const streams = symbols.map(s => `${s.toLowerCase()}@miniTicker`).join('/');
         const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
-        ws?.close();
         ws = new WebSocket(url);
+
+        ws.onopen = () => {
+            wsReconnectAttempt = 0;
+        };
 
         ws.onmessage = (ev) => {
             try {
-                const msg = JSON.parse(ev.data) as { data?: Record<string, string>; e?: string };
+                const msg = JSON.parse(ev.data as string) as { data?: Record<string, string>; e?: string };
                 const data = (msg.data ?? msg) as Record<string, string>;
                 if (data.e !== '24hrMiniTicker') return;
                 const symbol = data.s;
@@ -56,10 +67,14 @@
                 const open = Number(data.o);
                 if (!symbol || !isFinite(price) || !isFinite(open)) return;
                 const changePct = open > 0 ? ((price - open) / open) * 100 : 0;
-                // Update matching item in place
                 const idx = items.findIndex(i => i.symbol === symbol);
                 if (idx !== -1) {
                     items[idx] = { ...items[idx], price, change: changePct };
+                    // Flash animation
+                    flashSymbols = new Set([...flashSymbols, symbol]);
+                    setTimeout(() => {
+                        flashSymbols = new Set([...flashSymbols].filter(s => s !== symbol));
+                    }, 600);
                 }
             } catch {
                 // ignore parse errors
@@ -67,21 +82,37 @@
         };
 
         ws.onerror = () => {
-            ws?.close();
+            // onclose fires after onerror and handles reconnect
+        };
+
+        ws.onclose = () => {
             ws = null;
+            if (!wsDestroyed) {
+                const delay = calcWsReconnectDelay(wsReconnectAttempt);
+                wsReconnectAttempt++;
+                wsReconnectTimer = setTimeout(() => {
+                    if (!wsDestroyed) openPriceFeed(wsSymbols);
+                }, delay);
+            }
         };
     }
 
     onMount(async () => {
         await fetchWatchlist();
-        openPriceFeed();
+        wsSymbols = items.map(i => i.symbol).filter(s => CRYPTO_WS_SYMBOLS.has(s));
+        openPriceFeed(wsSymbols);
         interval = setInterval(fetchWatchlist, 30_000);
     });
 
     onDestroy(() => {
+        wsDestroyed = true;
+        if (wsReconnectTimer !== null) clearTimeout(wsReconnectTimer);
         clearInterval(interval);
-        ws?.close();
-        ws = null;
+        if (ws) {
+            ws.onclose = null; // prevent reconnect on explicit destroy
+            ws.close();
+            ws = null;
+        }
     });
 
     function fmtPrice(item: WatchlistItem): string {
@@ -109,7 +140,8 @@
                     {#each items as item (item.symbol)}
                         {@const isUp = item.change >= 0}
                         {@const isGold = GOLD_SYMBOLS.has(item.symbol)}
-                        <div class="wl-item" class:wl-gold={isGold}>
+                        {@const isFlashing = flashSymbols.has(item.symbol)}
+                        <div class="wl-item" class:wl-gold={isGold} class:wl-flash={isFlashing}>
                             <span class="wl-label" class:wl-label-gold={isGold}>{item.label}</span>
                             <span class="wl-price">{fmtPrice(item)}</span>
                             <span class="wl-change" class:wl-up={isUp} class:wl-down={!isUp}>
@@ -175,6 +207,15 @@
         white-space: nowrap;
         flex-shrink: 0;
         height: 36px;
+    }
+
+    .wl-flash {
+        animation: wl-flash-anim 0.6s ease-out forwards;
+    }
+
+    @keyframes wl-flash-anim {
+        0%   { background: rgba(255, 255, 255, 0.08); }
+        100% { background: transparent; }
     }
 
     .wl-gold {

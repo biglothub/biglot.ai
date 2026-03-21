@@ -4,11 +4,13 @@
     let {
         ohlcv,
         interval,
+        livePrice,
         showHeader = true,
         chrome = 'standalone'
     }: {
         ohlcv: OHLCV[] | null;
         interval?: string;
+        livePrice?: number;
         showHeader?: boolean;
         chrome?: 'standalone' | 'embedded';
     } = $props();
@@ -119,6 +121,25 @@
                     rx="0.5"
                 />
             {/each}
+
+            <!-- Live price line -->
+            {#if livePrice !== undefined && isFinite(livePrice) && layout && livePrice >= layout.minP && livePrice <= layout.maxP}
+                {@const livePriceY = priceToY(livePrice)}
+                <line
+                    x1={pad.left}
+                    y1={livePriceY}
+                    x2={svgW - pad.right}
+                    y2={livePriceY}
+                    stroke="#f59e0b"
+                    stroke-width="1"
+                    stroke-dasharray="4 3"
+                    opacity="0.7"
+                />
+                <rect x={svgW - pad.right} y={livePriceY - 7} width={pad.right + 2} height="14" fill="#f59e0b" opacity="0.85" rx="2"/>
+                <text x={svgW - pad.right + 3} y={livePriceY + 3} font-size="7" fill="#000" font-weight="700">
+                    {fmtAxisPrice(livePrice)}
+                </text>
+            {/if}
         </svg>
     {:else}
         <div class="mini-chart-empty">Chart data unavailable</div>
