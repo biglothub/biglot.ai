@@ -29,6 +29,7 @@ import './tools/derivatives.tool';
 import './tools/positionSize.tool';
 import './tools/portfolio.tool';
 import './tools/riskMonitor.tool';
+import './tools/tradeJournal.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
