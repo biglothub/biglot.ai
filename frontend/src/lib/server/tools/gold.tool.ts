@@ -2,7 +2,8 @@
 // Data sources: Yahoo Finance (GC=F), Binance (XAUUSDT), open.er-api.com (THB rate)
 import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
-import { fetchGoldPriceData, fetchGoldOHLCV } from '../data/gold.data';
+import { fetchGoldPriceData } from '../data/gold.data';
+import { fetchOHLCV } from '../data/ohlcvProvider';
 
 // ─── get_gold_price ──────────────────────────────────────────────────────────
 
@@ -117,12 +118,24 @@ registerTool({
 	execute: async (args): Promise<ToolResult> => {
 		const timeframe = typeof args.timeframe === 'string' ? args.timeframe : '1mo';
 
+		// Map gold timeframe to provider interval + candle limit
+		const tfMap: Record<string, { interval: string; limit: number }> = {
+			'1d':  { interval: '15m', limit: 96 },
+			'1wk': { interval: '1h',  limit: 168 },
+			'1mo': { interval: '1d',  limit: 30 },
+			'3mo': { interval: '1d',  limit: 90 },
+			'6mo': { interval: '1d',  limit: 180 },
+			'1y':  { interval: '1w',  limit: 52 },
+			'5y':  { interval: '1w',  limit: 260 },
+		};
+		const { interval, limit } = tfMap[timeframe] ?? { interval: '1d', limit: 30 };
+
 		const cacheKey = toolCache.generateKey('get_gold_chart', { timeframe });
 		const cached = toolCache.get<ToolResult>(cacheKey);
 		if (cached) return cached;
 
-		const chartData = await fetchGoldOHLCV(timeframe);
-		if (!chartData) {
+		const providerResult = await fetchOHLCV('XAUUSD', interval, limit);
+		if ('error' in providerResult) {
 			return {
 				success: false,
 				contentBlocks: [{ type: 'error', message: 'Failed to fetch gold chart data.', tool: 'get_gold_chart' }],
@@ -130,7 +143,7 @@ registerTool({
 			};
 		}
 
-		const { ohlcv, interval } = chartData;
+		const { ohlcv, source } = providerResult;
 		const lastCandle = ohlcv[ohlcv.length - 1];
 		const firstCandle = ohlcv[0];
 		const periodChange = ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100;
@@ -140,14 +153,13 @@ registerTool({
 			contentBlocks: [{
 				type: 'chart',
 				chartType: 'candlestick',
-				symbol: 'GC=F',
+				symbol: 'XAUUSD',
 				interval,
 				data: ohlcv
 			}],
-			textSummary: `Gold (GC=F) ${timeframe} chart: ${ohlcv.length} candles. Latest close: $${lastCandle.close.toFixed(2)}. Period change: ${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(2)}%. High: $${Math.max(...ohlcv.map(c => c.high)).toFixed(2)}, Low: $${Math.min(...ohlcv.map(c => c.low)).toFixed(2)}.`
+			textSummary: `Gold (XAUUSD) ${timeframe} chart: ${ohlcv.length} candles. Latest close: $${lastCandle.close.toFixed(2)}. Period change: ${periodChange >= 0 ? '+' : ''}${periodChange.toFixed(2)}%. High: $${Math.max(...ohlcv.map(c => c.high)).toFixed(2)}, Low: $${Math.min(...ohlcv.map(c => c.low)).toFixed(2)}.`,
+			sources: [{ name: source === 'yahoo' ? 'Yahoo Finance' : 'Binance API', url: source === 'yahoo' ? 'https://finance.yahoo.com' : 'https://api.binance.com', accessedAt: Date.now() }]
 		};
-
-		toolResult.sources = [{ name: 'Yahoo Finance', url: 'https://finance.yahoo.com', accessedAt: Date.now() }];
 
 		const cacheTtl = timeframe === '1d' ? 60_000 : timeframe === '1wk' ? 300_000 : 600_000;
 		toolCache.set(cacheKey, toolResult, cacheTtl);

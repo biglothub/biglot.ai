@@ -2,46 +2,14 @@
 import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
 import type { OHLCV } from '$lib/types/contentBlock';
-import { isForexOrCommodity, fetchYahooOHLCV } from './yahooFinance';
+import { fetchOHLCV } from '../data/ohlcvProvider';
 import { sma, ema, rsi, macd, bollingerBands } from '../indicators/engine';
 
-const BINANCE_BASE = 'https://api.binance.com/api/v3';
-
-const INTERVAL_MAP: Record<string, string> = {
-	'1m': '1m',
-	'5m': '5m',
-	'15m': '15m',
-	'30m': '30m',
-	'1h': '1h',
-	'2h': '2h',
-	'4h': '4h',
-	'6h': '6h',
-	'8h': '8h',
-	'12h': '12h',
-	'1d': '1d',
-	'1w': '1w',
-	'1M': '1M'
-};
-
-function normalizeSymbol(symbol: string): string {
-	let s = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
-	// Add USDT if not already a full trading pair
-	// A full pair looks like ETHBTC, BNBETH, MATICUSDT (quote currency appended)
-	// Plain tickers like BTC, ETH, SOL need USDT appended
-	const isFullPair =
-		s.endsWith('USDT') ||
-		s.endsWith('BUSD') ||
-		(s.endsWith('BTC') && s.length > 3) ||
-		(s.endsWith('ETH') && s.length > 3);
-	if (!isFullPair) {
-		s += 'USDT';
-	}
-	return s;
-}
+const VALID_INTERVALS = new Set(['1m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','1w','1M']);
 
 function normalizeInterval(interval: string): string {
 	const lower = interval.toLowerCase().trim();
-	return INTERVAL_MAP[lower] || '4h';
+	return VALID_INTERVALS.has(lower) ? lower : '4h';
 }
 
 // Indicator calculations delegated to engine
@@ -77,110 +45,39 @@ registerTool({
 		const interval = normalizeInterval(String(args.interval || '4h'));
 		const limit = Math.min(Math.max(Number(args.limit) || 100, 10), 500);
 
-		// --- Forex / Commodity fallback via Yahoo Finance ---
-		if (isForexOrCommodity(rawSymbol)) {
-			const displaySymbol = rawSymbol.toUpperCase().replace(/[^A-Z]/g, '');
-			const cacheKey = toolCache.generateKey('get_crypto_chart_forex', { displaySymbol, interval, limit });
-			const cached = toolCache.get<ToolResult>(cacheKey);
-			if (cached) return cached;
-
-			const yahooResult = await fetchYahooOHLCV(rawSymbol, interval, limit);
-			if ('error' in yahooResult) {
-				return {
-					success: false,
-					contentBlocks: [{ type: 'error', message: yahooResult.error, tool: 'get_crypto_chart' }],
-					textSummary: `Error: ${yahooResult.error}`
-				};
-			}
-
-			const { ohlcv } = yahooResult;
-			if (ohlcv.length === 0) {
-				return {
-					success: false,
-					contentBlocks: [{ type: 'error', message: `No chart data available for ${displaySymbol}`, tool: 'get_crypto_chart' }],
-					textSummary: `Error: No chart data for ${displaySymbol}.`
-				};
-			}
-
-			const lastCandle = ohlcv[ohlcv.length - 1];
-			const firstCandle = ohlcv[0];
-			const priceChange = ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100;
-
-			const result: ToolResult = {
-				success: true,
-				contentBlocks: [
-					{
-						type: 'chart',
-						chartType: 'candlestick',
-						symbol: displaySymbol,
-						interval,
-						data: ohlcv
-					}
-				],
-				textSummary: `${displaySymbol} ${interval} chart: ${ohlcv.length} candles, Latest close: ${lastCandle.close}, Price change over period: ${priceChange.toFixed(2)}%, High: ${Math.max(...ohlcv.map((c) => c.high)).toFixed(2)}, Low: ${Math.min(...ohlcv.map((c) => c.low)).toFixed(2)}`,
-				sources: [{ name: 'Yahoo Finance', url: 'https://finance.yahoo.com', accessedAt: Date.now() }]
-			};
-
-			toolCache.set(cacheKey, result, 60_000);
-			return result;
-		}
-
-		// --- Crypto via Binance ---
-		const symbol = normalizeSymbol(rawSymbol);
-
-		const cacheKey = toolCache.generateKey('get_crypto_chart', { symbol, interval, limit });
+		const cacheKey = toolCache.generateKey('get_crypto_chart', { rawSymbol, interval, limit });
 		const cached = toolCache.get<ToolResult>(cacheKey);
 		if (cached) return cached;
 
-		const url = `${BINANCE_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-		console.log(`[get_crypto_chart] Fetching: ${url}`);
-		const response = await fetch(url);
-
-		if (!response.ok) {
-			const errorBody = await response.text().catch(() => 'no body');
-			console.error(`[get_crypto_chart] Binance error ${response.status}: ${errorBody}`);
+		const providerResult = await fetchOHLCV(rawSymbol, interval, limit);
+		if ('error' in providerResult) {
 			return {
 				success: false,
-				contentBlocks: [
-					{
-						type: 'error',
-						message: `Failed to fetch chart data for ${symbol} (HTTP ${response.status}). The symbol may not be available on Binance.`,
-						tool: 'get_crypto_chart'
-					}
-				],
-				textSummary: `Error: Could not fetch chart data for ${symbol} (HTTP ${response.status}).`
+				contentBlocks: [{ type: 'error', message: providerResult.error, tool: 'get_crypto_chart' }],
+				textSummary: `Error: ${providerResult.error}`
 			};
 		}
 
-		const rawData = await response.json();
-		const ohlcv: OHLCV[] = (rawData as number[][]).map((k: number[]) => ({
-			time: Math.floor(k[0] / 1000), // Binance returns ms, lightweight-charts needs seconds
-			open: parseFloat(String(k[1])),
-			high: parseFloat(String(k[2])),
-			low: parseFloat(String(k[3])),
-			close: parseFloat(String(k[4])),
-			volume: parseFloat(String(k[5]))
-		}));
+		const { ohlcv, displayName, source } = providerResult;
+		if (ohlcv.length === 0) {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: `No chart data available for ${displayName}`, tool: 'get_crypto_chart' }],
+				textSummary: `Error: No chart data for ${displayName}.`
+			};
+		}
 
 		const lastCandle = ohlcv[ohlcv.length - 1];
 		const firstCandle = ohlcv[0];
-		const priceChange = lastCandle
-			? ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100
-			: 0;
+		const priceChange = ((lastCandle.close - firstCandle.close) / firstCandle.close) * 100;
+		const sourceLabel = source === 'binance' ? 'Binance API' : source === 'yahoo' ? 'Yahoo Finance' : 'CoinGecko';
+		const sourceUrl = source === 'binance' ? 'https://api.binance.com' : source === 'yahoo' ? 'https://finance.yahoo.com' : 'https://api.coingecko.com';
 
 		const result: ToolResult = {
 			success: true,
-			contentBlocks: [
-				{
-					type: 'chart',
-					chartType: 'candlestick',
-					symbol,
-					interval,
-					data: ohlcv
-				}
-			],
-			textSummary: `${symbol} ${interval} chart: ${ohlcv.length} candles, Latest close: ${lastCandle?.close ?? 'N/A'}, Price change over period: ${priceChange.toFixed(2)}%, High: ${Math.max(...ohlcv.map((c) => c.high)).toFixed(2)}, Low: ${Math.min(...ohlcv.map((c) => c.low)).toFixed(2)}`,
-			sources: [{ name: 'Binance API', url: 'https://api.binance.com', accessedAt: Date.now() }]
+			contentBlocks: [{ type: 'chart', chartType: 'candlestick', symbol: displayName, interval, data: ohlcv }],
+			textSummary: `${displayName} ${interval} chart: ${ohlcv.length} candles, Latest close: ${lastCandle.close}, Price change over period: ${priceChange.toFixed(2)}%, High: ${Math.max(...ohlcv.map((c) => c.high)).toFixed(2)}, Low: ${Math.min(...ohlcv.map((c) => c.low)).toFixed(2)}`,
+			sources: [{ name: sourceLabel, url: sourceUrl, accessedAt: Date.now() }]
 		};
 
 		toolCache.set(cacheKey, result, 60_000);
@@ -225,60 +122,20 @@ registerTool({
 			? (args.indicators as string[])
 			: ['rsi', 'sma_20', 'sma_50'];
 
-		const isForex = isForexOrCommodity(rawSymbol);
-		const symbol = isForex ? rawSymbol.toUpperCase().replace(/[^A-Z]/g, '') : normalizeSymbol(rawSymbol);
-
-		const cacheKey = toolCache.generateKey('get_technical_analysis', {
-			symbol,
-			interval,
-			indicators
-		});
+		const cacheKey = toolCache.generateKey('get_technical_analysis', { rawSymbol, interval, indicators });
 		const cached = toolCache.get<ToolResult>(cacheKey);
 		if (cached) return cached;
 
-		let ohlcv: OHLCV[];
-
-		if (isForex) {
-			// Fetch from Yahoo Finance for forex/commodities
-			const yahooResult = await fetchYahooOHLCV(rawSymbol, interval, 300);
-			if ('error' in yahooResult) {
-				return {
-					success: false,
-					contentBlocks: [{ type: 'error', message: yahooResult.error, tool: 'get_technical_analysis' }],
-					textSummary: `Error: ${yahooResult.error}`
-				};
-			}
-			ohlcv = yahooResult.ohlcv;
-		} else {
-			// Fetch from Binance for crypto
-			const limit = 300;
-			const url = `${BINANCE_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-			const response = await fetch(url);
-
-			if (!response.ok) {
-				return {
-					success: false,
-					contentBlocks: [
-						{
-							type: 'error',
-							message: `Failed to fetch data for ${symbol}`,
-							tool: 'get_technical_analysis'
-						}
-					],
-					textSummary: `Error: Could not fetch data for ${symbol}.`
-				};
-			}
-
-			const rawData = await response.json();
-			ohlcv = (rawData as number[][]).map((k: number[]) => ({
-				time: Math.floor(k[0] / 1000),
-				open: parseFloat(String(k[1])),
-				high: parseFloat(String(k[2])),
-				low: parseFloat(String(k[3])),
-				close: parseFloat(String(k[4])),
-				volume: parseFloat(String(k[5]))
-			}));
+		const providerResult = await fetchOHLCV(rawSymbol, interval, 300);
+		if ('error' in providerResult) {
+			return {
+				success: false,
+				contentBlocks: [{ type: 'error', message: providerResult.error, tool: 'get_technical_analysis' }],
+				textSummary: `Error: ${providerResult.error}`
+			};
 		}
+
+		const { ohlcv, displayName: symbol } = providerResult;
 
 		if (ohlcv.length === 0) {
 			return {
@@ -438,7 +295,7 @@ registerTool({
 				}
 			],
 			textSummary: `${symbol} ${interval} Technical Analysis: Price ${lastClose?.toFixed(2)}, ${summaryParts.join(', ')}`,
-			sources: [{ name: isForex ? 'Yahoo Finance' : 'Binance API', url: isForex ? 'https://finance.yahoo.com' : 'https://api.binance.com', accessedAt: Date.now() }]
+			sources: [{ name: 'Market Data', url: 'https://api.binance.com', accessedAt: Date.now() }]
 		};
 
 		toolCache.set(cacheKey, result, 60_000);
