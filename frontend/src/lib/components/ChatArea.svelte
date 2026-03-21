@@ -8,6 +8,9 @@
         ThumbsUp,
         ThumbsDown,
         RefreshCcw,
+        Share2,
+        Download,
+        Link,
     } from "lucide-svelte";
     import { chatState } from "$lib/state/chat.svelte";
     import Markdown from "./Markdown.svelte";
@@ -15,8 +18,35 @@
     import ToolProgress from "./blocks/ToolProgress.svelte";
     import SourcesBlock from "./blocks/SourcesBlock.svelte";
     import type { SourcesBlock as SourcesBlockType } from "$lib/types/contentBlock";
+    import { messagesToMarkdown, downloadMarkdown, buildShareUrl } from "$lib/utils/chatExport";
 
     let copiedIndex = $state<number | null>(null);
+    let shareMenuOpen = $state(false);
+    let linkCopied = $state(false);
+
+    function exportChatMarkdown() {
+        const msgs = chatState.messages.map(m => ({
+            role: m.role,
+            content: m.content,
+            contentBlocks: m.contentBlocks as Array<{ type: string; [key: string]: unknown }> | undefined,
+        }));
+        const chatTitle = chatState.allChats.find((c: { id: string; title: string }) => c.id === chatState.currentChatId)?.title ?? 'BigLot.ai Chat';
+        const md = messagesToMarkdown(msgs, chatTitle);
+        const chatId = chatState.currentChatId ?? 'chat';
+        downloadMarkdown(`biglot-${chatId.slice(0, 8)}.md`, md);
+        shareMenuOpen = false;
+    }
+
+    function copyShareLink() {
+        const chatId = chatState.currentChatId;
+        if (!chatId) return;
+        const url = buildShareUrl(chatId, window.location.origin);
+        navigator.clipboard.writeText(url).then(() => {
+            linkCopied = true;
+            setTimeout(() => { linkCopied = false; }, 2000);
+        });
+    }
+
     const modeLabel: Record<string, string> = {
         coach: "Coach",
         recovery: "Recovery",
@@ -62,6 +92,48 @@
         void maybeAutoScroll();
     });
 </script>
+
+<div class="relative">
+    <!-- Share/Export floating button (shows when chat has messages) -->
+    {#if chatState.messages.length > 0}
+        <div class="absolute top-2 right-4 z-20 flex items-center gap-1">
+            <button
+                onclick={() => { shareMenuOpen = !shareMenuOpen; }}
+                class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border border-white/10 bg-secondary/80 hover:bg-secondary/90 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm"
+                title="Share or export chat"
+            >
+                <Share2 size={13} />
+                Share
+            </button>
+        </div>
+    {/if}
+
+    <!-- Share/Export menu dropdown -->
+    {#if shareMenuOpen}
+        <div
+            role="presentation"
+            class="fixed inset-0 z-40"
+            onclick={() => { shareMenuOpen = false; }}
+        ></div>
+        <div class="absolute top-11 right-4 z-50 w-48 rounded-xl border border-white/10 bg-secondary/95 backdrop-blur-xl shadow-2xl p-1.5 flex flex-col gap-0.5">
+            <button
+                onclick={copyShareLink}
+                disabled={!chatState.currentChatId}
+                class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors w-full text-left disabled:opacity-40"
+            >
+                <Link size={14} />
+                {linkCopied ? 'Link copied!' : 'Copy share link'}
+            </button>
+            <button
+                onclick={exportChatMarkdown}
+                class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors w-full text-left"
+            >
+                <Download size={14} />
+                Export Markdown
+            </button>
+        </div>
+    {/if}
+</div>
 
 <div
     bind:this={scroller}
