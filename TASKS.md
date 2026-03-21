@@ -113,13 +113,14 @@
   - Tests: CRUD, PnL calculations, equity curve generation.
   - Session notes (2026-03-22): CRUD via Supabase (addPosition, listPositions, closePosition, listClosedTrades, deletePosition). Tools: portfolio_snapshot, add_position, close_position, delete_position. Pure helpers for unrealised PnL, R-multiple, win rate, avg R. PortfolioWidget.svelte shows open positions with live PnL, stats row. Fixed buildPortfolioSnapshot mock (order() must be thenable for listPositions). 703 tests passing.
 
-- [ ] **T-303**: Drawdown Monitor
-  - Status: PENDING | Depends: T-302
+- [x] **T-303**: Drawdown Monitor
+  - Status: DONE
   - Spec: Real-time risk monitoring — current drawdown %, daily loss limit, max open risk, correlation-aware portfolio risk. Alert on threshold breach. GaugeBlock for risk level.
   - Create: `frontend/src/lib/server/risk/drawdownMonitor.ts`, `drawdownMonitor.test.ts`
   - Create: `frontend/src/lib/server/tools/riskMonitor.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Simulate drawdown scenarios, verify alerts.
+  - Session notes (2026-03-22): calcCurrentDrawdown (peak equity tracking), calcDailyPnL (today realised+unrealised), calcOpenRisk (stop-distance × size per position), buildRiskSnapshot (composite 0-100 score with weighted dimensions). Tool: monitor_portfolio_risk returns GaugeBlock + MetricCard + alerts table. 31 tests, 734 total passing.
 
 - [ ] **T-304**: Correlation Matrix Tool
   - Status: PENDING
