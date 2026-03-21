@@ -170,12 +170,13 @@
   - Tests: Chart data generation from mock trades.
   - Session notes (2026-03-22): performanceData.ts with buildEquityCurve, buildMonthlyReturns, buildTradeDistribution, calcSharpe/Sortino/Calmar. EquityCurve.svelte (SVG with area fill+drawdown), MonthlyReturns.svelte (heatmap table), TradeDistribution.svelte (win/loss + R-histogram). /api/analytics/performance endpoint. Injected into analytics page. 26 tests, 854 total passing.
 
-- [ ] **T-404**: Voice Input (Speech-to-Text)
-  - Status: PENDING
+- [x] **T-404**: Voice Input (Speech-to-Text)
+  - Status: DONE
   - Spec: Web Speech API in InputArea.svelte. Thai + English support. Mic button in input area.
   - Modify: `frontend/src/lib/components/InputArea.svelte`
   - Create: `frontend/src/lib/utils/speechInput.ts`
   - Tests: Speech result handling.
+  - Session notes (2026-03-22): createSpeechInput wrapper (lang: th-TH/en-US/auto, continuous, interimResults, onResult/onError/onEnd), isSpeechSupported. Mic button with red pulse when active. Local Web Speech API interfaces (TypeScript DOM lib doesn't include all types). 19 tests, 901 total passing.
 
 - [ ] **T-405**: Chat Export & Sharing
   - Status: PENDING
@@ -189,13 +190,14 @@
 
 ## Phase 5: Advanced Features
 
-- [ ] **T-501**: Chart Pattern Recognition
-  - Status: PENDING | Depends: T-101, T-203
+- [x] **T-501**: Chart Pattern Recognition
+  - Status: DONE
   - Spec: Heuristic pattern detection — H&S, double top/bottom, triangles, flags, wedges, cup & handle. Annotate on ChartBlock.
   - Create: `frontend/src/lib/server/indicators/patterns.ts`, `patterns.test.ts`
   - Create: `frontend/src/lib/server/tools/patternScan.tool.ts`
   - Modify: `frontend/src/lib/types/contentBlock.ts` (PatternAnnotation), `agentLoop.server.ts`
   - Tests: Known pattern formations, detection accuracy.
+  - Session notes (2026-03-22): PatternAnnotation type added to contentBlock.ts + ChartBlock extended. patterns.ts: findPivots (lookback window), detectDoubleTop/Bottom (similarity threshold), detectH&S/Inverse, detectTriangles (slope analysis), detectFlags (pole+consolidation). scan_chart_patterns tool. Fixed pre-existing T-404 type errors. 28 tests, 901 total passing.
 
 - [ ] **T-502**: Multi-Timeframe Analysis Tool
   - Status: PENDING | Depends: T-101, T-203
