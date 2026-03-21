@@ -178,13 +178,14 @@
   - Tests: Speech result handling.
   - Session notes (2026-03-22): createSpeechInput wrapper (lang: th-TH/en-US/auto, continuous, interimResults, onResult/onError/onEnd), isSpeechSupported. Mic button with red pulse when active. Local Web Speech API interfaces (TypeScript DOM lib doesn't include all types). 19 tests, 901 total passing.
 
-- [ ] **T-405**: Chat Export & Sharing
-  - Status: PENDING
+- [x] **T-405**: Chat Export & Sharing
+  - Status: DONE
   - Spec: Export as PDF/Markdown. Share as public read-only link. Includes all content blocks.
   - Create: `frontend/src/lib/utils/chatExport.ts`, `frontend/src/routes/api/chat/export/+server.ts`
   - Create: `frontend/src/routes/share/[id]/+page.svelte`
   - Modify: `frontend/src/lib/components/ChatArea.svelte`
   - Tests: Markdown generation, export formats.
+  - Session notes (2026-03-22): messagesToMarkdown serializes all block types (metric_card, gauge, trade_setup, chart, table, error, sources). downloadMarkdown/downloadJson trigger browser downloads. buildShareUrl. /api/chat/export GET (admin Supabase, UUID capability URL). /share/[id] SSR page. ChatArea share button with dropdown. 23 tests, 950 total passing.
 
 ---
 
@@ -199,12 +200,13 @@
   - Tests: Known pattern formations, detection accuracy.
   - Session notes (2026-03-22): PatternAnnotation type added to contentBlock.ts + ChartBlock extended. patterns.ts: findPivots (lookback window), detectDoubleTop/Bottom (similarity threshold), detectH&S/Inverse, detectTriangles (slope analysis), detectFlags (pole+consolidation). scan_chart_patterns tool. Fixed pre-existing T-404 type errors. 28 tests, 901 total passing.
 
-- [ ] **T-502**: Multi-Timeframe Analysis Tool
-  - Status: PENDING | Depends: T-101, T-203
+- [x] **T-502**: Multi-Timeframe Analysis Tool
+  - Status: DONE
   - Spec: Tool `multi_timeframe_analysis` — analyze across 1D, 4H, 1H, 15M simultaneously. Trend alignment, key levels per TF, confluence zones. Returns HeatmapBlock + ChartBlocks.
   - Create: `frontend/src/lib/server/tools/multiTimeframe.tool.ts`, `frontend/src/lib/server/indicators/multiTF.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock multi-TF data, verify trend alignment.
+  - Session notes (2026-03-22): multiTF.ts: detectTrend, classifyMACD, calcBiasScore (-2..+2), findKeyLevels, analyseTimeframe, findConfluenceZones, buildMTFAnalysis. Tool: multi_timeframe_analysis parallel-fetches all TFs, returns HeatmapBlock + MetricCard + table + confluence zones. 26 tests, 927 total passing.
 
 - [ ] **T-503**: Order Flow Analysis
   - Status: PENDING
