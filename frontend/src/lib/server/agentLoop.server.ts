@@ -21,6 +21,7 @@ import './tools/webCrawl.tool';
 import './tools/memory.tool';
 import './tools/handoff.tool';
 import './tools/signals.tool';
+import './tools/backtest.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

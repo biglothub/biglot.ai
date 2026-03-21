@@ -26,8 +26,8 @@
   - Create: `frontend/sql/strategies.sql`
   - Tests: Schema validation, reject invalid strategies, CRUD ops.
 
-- [ ] **T-104**: Backtesting Engine
-  - Status: PENDING | Depends: T-101, T-103
+- [x] **T-104**: Backtesting Engine
+  - Status: DONE | Depends: T-101, T-103
   - Spec: Takes Strategy + OHLCV[] and simulates trades. Metrics: total return, max drawdown, Sharpe, Sortino, win rate, avg R-multiple, profit factor, max consecutive losses. Walk-forward validation (70/30).
   - Create: `frontend/src/lib/server/backtest/engine.ts`, `metrics.ts`, `engine.test.ts`
   - Create: `frontend/src/lib/server/tools/backtest.tool.ts`, `frontend/src/lib/types/backtest.ts`
@@ -230,6 +230,12 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-104)
+- Completed: T-104 Backtesting Engine
+- Result: `backtest.ts` types (Trade, EquityPoint, BacktestMetrics, BacktestResult, WalkForwardResult). `metrics.ts` with pure metric functions (maxDrawdown, Sharpe, Sortino, CAGR, profitFactor, consecutive losses, equity curve builder). `engine.ts` with IndicatorCatalogue (lazy pre-computation of all strategy indicators), condition evaluator supporting all operators incl. crosses_above/below, stop/TP/trailing/time/indicator exits, max-drawdown circuit breaker, ATR-based position sizing. `backtest.tool.ts` registers `run_backtest` tool (fetches OHLCV from Binance/Yahoo, returns MetricCardBlock + TableBlock, optional walk-forward). 39 tests all passing. Total: 429 tests.
+- Issues: agentLoop.server.test.ts needed `vi.mock('./tools/backtest.tool', () => ({}))` to pass
+- Next: T-105 Backtest Results Visualization (depends on T-104 ✓)
 
 ### Session 2026-03-22 (continued)
 - Completed: T-101 Technical Indicator Engine
