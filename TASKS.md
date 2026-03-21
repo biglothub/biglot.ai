@@ -130,13 +130,14 @@
   - Tests: Known correlation values, edge cases.
   - Session notes (2026-03-22): risk/correlation.ts with pearsonCorrelation, toReturns, alignSeries, buildCorrelationMatrix (n×n symmetric, minPoints filter). get_correlation_matrix tool appended to crossAsset.tool.ts — symbol aliases, 30/60/90/180d windows, HeatmapBlock output. 28 tests, 762 total passing.
 
-- [ ] **T-305**: Trade Journal with AI Review
-  - Status: PENDING | Depends: T-302
+- [x] **T-305**: Trade Journal with AI Review
+  - Status: DONE
   - Spec: Tools `log_trade` and `review_trades` — journaling with AI pattern analysis: best/worst days, common mistakes, emotional trading detection. Supabase `trade_journal` table.
   - Create: `frontend/src/lib/server/tools/tradeJournal.tool.ts`, `frontend/src/lib/server/portfolio/journal.ts`, `journal.test.ts`
   - Create: `frontend/sql/trade_journal.sql`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Journal CRUD, statistics calculation.
+  - Session notes (2026-03-22): trade_journal table with emotion/setup_type/mistakes[]/followed_plan. journal.ts: logTrade, listJournalEntries, calcJournalStats (win rate, avg PnL/R, best/worst day, mistake counts, emotion breakdown, plan adherence rate, emotional trading %). Tools: log_trade, review_trades. 18 tests, 780 total passing.
 
 ---
 
