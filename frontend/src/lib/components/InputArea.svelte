@@ -18,12 +18,46 @@
     import { chatState } from "$lib/state/chat.svelte";
     import { botState } from "$lib/state/bots.svelte";
     import { onMount } from "svelte";
+    import { createSpeechInput, isSpeechSupported, type SpeechInputInstance } from "$lib/utils/speechInput";
 
     let input = $state("");
     let fileInput: HTMLInputElement;
     let fileInputDoc: HTMLInputElement;
     let textareaRef: HTMLTextAreaElement;
     let isProcessingFile = $state(false);
+    let isListening = $state(false);
+    let speechInstance: SpeechInputInstance | null = null;
+    let speechLang = $state<'th-TH' | 'en-US' | 'auto'>('auto');
+
+    function toggleVoice() {
+        if (isListening) {
+            speechInstance?.stop();
+            isListening = false;
+            return;
+        }
+        speechInstance = createSpeechInput({
+            lang: speechLang,
+            interimResults: true,
+            onResult(transcript, isFinal) {
+                if (isFinal) {
+                    input = (input + ' ' + transcript).trim();
+                }
+            },
+            onError(error) {
+                if (error !== 'aborted') {
+                    console.warn('Speech recognition error:', error);
+                }
+                isListening = false;
+            },
+            onEnd() {
+                isListening = false;
+            },
+        });
+        if (speechInstance) {
+            speechInstance.start();
+            isListening = true;
+        }
+    }
 
     async function handleSend() {
         if ((!input.trim() && !chatState.selectedImage && !chatState.selectedFile) || chatState.isLoading)
@@ -387,6 +421,19 @@
 
         <!-- Right Actions -->
         <div class="flex items-center gap-1 mb-0.5">
+            {#if isSpeechSupported()}
+                <button
+                    onclick={toggleVoice}
+                    disabled={chatState.isLoading}
+                    class="p-2.5 rounded-full transition-all duration-200 disabled:opacity-40
+                        {isListening
+                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 animate-pulse'
+                            : 'text-muted-foreground hover:text-primary hover:bg-white/5'}"
+                    title={isListening ? 'Stop recording' : `Voice input (${speechLang === 'auto' ? 'auto' : speechLang})`}
+                >
+                    <Mic size={20} />
+                </button>
+            {/if}
             {#if chatState.isLoading}
                 <button
                     onclick={() => chatState.stopGeneration()}
