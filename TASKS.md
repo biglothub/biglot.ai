@@ -19,8 +19,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts` (import)
   - Tests: Feed known historical setups, verify signal detection.
 
-- [ ] **T-103**: Strategy Definition Schema
-  - Status: PENDING
+- [x] **T-103**: Strategy Definition Schema
+  - Status: DONE
   - Spec: JSON schema for trading strategies — entry conditions (indicator + threshold + comparison), exit conditions, position sizing, risk params, timeframe, asset filters. Store in Supabase `strategies` table.
   - Create: `frontend/src/lib/types/strategy.ts`, `frontend/src/lib/server/strategy.server.ts`, `strategy.server.test.ts`
   - Create: `frontend/sql/strategies.sql`
@@ -231,7 +231,7 @@
 
 ## Session Notes
 
-### Session 2026-03-22
+### Session 2026-03-22 (continued)
 - Completed: T-101 Technical Indicator Engine
 - Result: 20 indicators (SMA, EMA, RSI, MACD, BB, ATR, Stochastic, ADX, OBV, VWAP, Ichimoku, Fibonacci, Pivot Points, Williams %R, CCI, MFI, Parabolic SAR, Donchian, Keltner, SuperTrend) in `frontend/src/lib/server/indicators/engine.ts`. 69 tests all passing. charts.tool.ts updated to import from engine.
 - Issues: None
@@ -241,3 +241,8 @@
 - Result: `confluence.ts` with 8 detectors (MA crossover ×2, trend alignment, RSI divergence, MACD cross, Bollinger breakout/squeeze, S/R touch via pivot points, SuperTrend flip, Stochastic cross). `signals.tool.ts` registers `generate_signals` tool — fetches OHLCV from Binance/Yahoo, runs all detectors, returns MetricCardBlock + TradeSetupBlock when confluenceScore ≥ 4. 36 tests in `confluence.test.ts`, all passing. Total: 340 tests.
 - Issues: agentLoop.server.test.ts needed new `vi.mock('./tools/signals.tool', () => ({}))` to pass
 - Next: T-103 Strategy Definition Schema (no hard dependency, can start any time)
+
+- Completed: T-103 Strategy Definition Schema
+- Result: `strategy.ts` with full type system (IndicatorCondition, ConditionGroup, EntryCondition, ExitCondition union ×5 types, PositionSizing ×4 methods, RiskParams, AssetFilter, Strategy). `validateStrategy()` collects all errors (not fail-fast). `strategy.server.ts` with createStrategy/getStrategy/listStrategies/updateStrategy/deleteStrategy using biglot_user_id. `strategies.sql` with indexes, RLS policies, updated_at trigger. 50 tests all passing. Total: 390 tests.
+- Issues: MockQueryBuilder needed fix — `.select()` after `.insert()` was overwriting the action; fixed by tracking primaryAction separately.
+- Next: T-104 Backtesting Engine (depends on T-101 ✓, T-103 ✓)
