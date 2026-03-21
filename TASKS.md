@@ -34,8 +34,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts` (import)
   - Tests: Backtest simple MA crossover on known data, verify PnL matches hand-calc.
 
-- [ ] **T-105**: Backtest Results Visualization
-  - Status: PENDING | Depends: T-104
+- [x] **T-105**: Backtest Results Visualization
+  - Status: DONE | Depends: T-104
   - Spec: BacktestBlock — equity curve (line chart), drawdown chart, trade markers on price, metrics table. Use lightweight-charts.
   - Modify: `frontend/src/lib/types/contentBlock.ts` (add BacktestBlock)
   - Create: `frontend/src/lib/components/blocks/BacktestBlock.svelte`
@@ -230,6 +230,12 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-105)
+- Completed: T-105 Backtest Results Visualization
+- Result: `BacktestBlock.svelte` with equity curve (lightweight-charts LineSeries, 160px), drawdown chart (80px, red), 10-metric grid (5-col), walk-forward validation panel (in/out-of-sample + degradation), trades table (last 20 reversed). `BacktestBlock` type + 3 helper types in `contentBlock.ts`. Lazy-loaded in `ContentBlockRenderer.svelte`. 22 tests (type shape, trades, equity, metrics, formatting, snapshots) — 451 total, all passing.
+- Issues: None
+- Next: T-201 Economic Calendar Tool (no hard dependency)
 
 ### Session 2026-03-22 (T-104)
 - Completed: T-104 Backtesting Engine
