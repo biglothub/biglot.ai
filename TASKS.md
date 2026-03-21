@@ -75,12 +75,13 @@
   - Tests: Mock API responses, verify metric calculations.
   - Session notes (2026-03-22): Implemented using CoinMetrics Community API (AdrActCnt, HashRate, NVTAdj, CapMrktCurUSD, CapRealUSD, TxCnt) + Blockchain.com fallback for BTC. MVRV computed as CapMrktCurUSD/CapRealUSD. Hash rate converted GH/s→EH/s (BTC) or TH/s (ETH). 28 tests, all passing. 583 total tests passing.
 
-- [ ] **T-205**: Derivatives Data Tool
-  - Status: PENDING
+- [x] **T-205**: Derivatives Data Tool
+  - Status: DONE
   - Spec: Tool `get_derivatives_data` — open interest, funding rates, liquidations, options max pain, put/call ratio. Binance/Deribit public APIs. Returns TableBlock + MetricCardBlock.
   - Create: `frontend/src/lib/server/tools/derivatives.tool.ts`, `frontend/src/lib/server/data/derivatives.data.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Mock Binance futures API, verify OI aggregation.
+  - Session notes (2026-03-22): Implemented with Binance Futures API (funding rates, OI, L/S ratios, liquidations) and Deribit (BTC options: put/call ratio, max pain via pain minimisation algorithm). `annualiseFundingRate` converts 8h rate → yearly %. 39 tests, 622 total passing.
 
 - [ ] **T-206**: Market Breadth Dashboard
   - Status: PENDING
