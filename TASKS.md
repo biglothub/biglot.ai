@@ -386,6 +386,91 @@
 
 ---
 
+## Phase 9: Screening, Intelligence & Simulation
+
+- [x] **T-901**: Technical Asset Screener
+  - Status: DONE
+  - Spec: Tool `screen_assets` — batch-screen a watchlist of symbols against configurable technical filters: RSI range (oversold/overbought), MA trend (price above/below 50/200 SMA), MACD signal (bullish/bearish crossover in last 3 bars), volume spike (>N× 20-period avg), ATR volatility (high/low relative to price). Each asset receives a composite match score (0–N matching criteria). Default watchlist: top 20 crypto USDT pairs. Returns MetricCard (screened count, matching count, top signal) + TableBlock (symbol, price, RSI, trend, MACD, volume ratio, score) sorted by score desc.
+  - Create: `frontend/src/lib/server/data/screener.data.ts`, `screener.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/screener.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Single-asset screening, filter application (RSI, MA, MACD, volume), score ranking, default watchlist, edge cases (no data, insufficient candles).
+  - Session notes (2026-03-22): screener.data.ts: screenAsset (RSI/SMA50/SMA200/MACD/volumeRatio/ATR% — handles flat-candle RSI=100 edge case, NaN-safe via isNaN check), checkTrend (6 trend types incl. golden/death cross), screenAssets (batch + sort by score desc then change24h). screener.tool.ts: screen_assets — parallel fetchOHLCV for all symbols, 10 min cache, MetricCard + results table. 36 tests, 1550 total passing.
+
+- [ ] **T-902**: Crypto Market Dominance Tool
+  - Status: PENDING
+  - Spec: Tool `get_market_dominance` — fetch global crypto market data from CoinGecko `/global` endpoint: total market cap, BTC dominance %, ETH dominance %, alt dominance %, 24h market cap change %, active cryptocurrencies count. Classify market sentiment (BTC-led / ETH-led / alt-season / risk-off) based on dominance thresholds. 30 min cache. Returns MetricCard (BTC/ETH/alt dom, total cap, 24h change) + classification TableBlock.
+  - Create: `frontend/src/lib/server/data/dominance.data.ts`, `dominance.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/dominance.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Dominance calculation, sentiment classification, mock CoinGecko response.
+
+- [ ] **T-903**: Fibonacci Confluence Zone Scanner
+  - Status: PENDING | Depends: T-101
+  - Spec: Tool `scan_fibonacci_confluence` — given OHLCV, detect multiple swing highs/lows (findPivots), compute Fibonacci retracement (38.2%, 50%, 61.8%, 78.6%) and extension (127.2%, 161.8%) levels for each swing. Cluster levels within 0.5% of each other into confluence zones. Score zones by number of overlapping levels. Returns MetricCard (current price, nearest zone, zone count) + TableBlock (zone price, strength, Fib levels contributing, zone type support/resistance).
+  - Create: `frontend/src/lib/server/indicators/fibConfluence.ts`, `fibConfluence.test.ts`
+  - Create: `frontend/src/lib/server/tools/fibConfluence.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Single swing retracements, multi-swing confluence detection, clustering, zone classification.
+
+- [ ] **T-904**: Monte Carlo Portfolio Simulation
+  - Status: PENDING | Depends: T-302
+  - Spec: Tool `simulate_portfolio` — Monte Carlo simulation (1000 paths, configurable) using historical daily returns from portfolio positions. Compute: median final value, 5th/95th percentile band, probability of reaching target, probability of ruin (drawdown > threshold), expected max drawdown distribution. Returns MetricCard (median return, risk of ruin %, target probability) + TableBlock (percentile outcomes at 30/60/90/180/365 days).
+  - Create: `frontend/src/lib/server/risk/monteCarlo.ts`, `monteCarlo.test.ts`
+  - Create: `frontend/src/lib/server/tools/monteCarlo.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Path generation, percentile extraction, risk-of-ruin calculation, known distributions.
+
+- [ ] **T-905**: AI Trade Idea Generator
+  - Status: PENDING | Depends: T-604, T-202, T-102
+  - Spec: Tool `generate_trade_ideas` — synthesizes current market data into 3 actionable trade ideas. Pulls: market regime (detect_market_regime output), top movers (Binance 24h), SMC key levels, candlestick patterns, signals from signal generator. Scores each idea by confluence (regime alignment + pattern + SMC). Returns 3 TradeSetupBlocks with entry zone, stop, T1/T2/T3 targets, thesis, and confidence score.
+  - Create: `frontend/src/lib/server/tools/tradeIdeas.tool.ts`, `tradeIdeas.tool.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Idea generation with mock data, confluence scoring, TradeSetupBlock format.
+
+---
+
+## Phase 9: Intelligence & Automation
+
+- [ ] **T-901**: Watchlist Scanner Dashboard
+  - Status: PENDING
+  - Spec: Tool `scan_watchlist` — scan a list of symbols (default: BTC, ETH, SOL, BNB, SPY, QQQ, GLD) in parallel. Per symbol: current price, 24h change %, RSI(14), regime (via analyzeRegime), dominant signal direction + confluence score, SMA50/200 position. Returns MetricCard (bull/bear count, avg RSI, market sentiment) + full scan TableBlock sorted by confluence score descending.
+  - Create: `frontend/src/lib/server/data/watchlistScanner.data.ts`, `watchlistScanner.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/watchlistScanner.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: scanSymbol with known OHLCV, buildWatchlistScan aggregation, bull/bear counts, error handling.
+
+- [ ] **T-902**: Fibonacci Confluence Tool
+  - Status: PENDING | Depends: T-101
+  - Spec: Tool `get_fibonacci_confluence` — given OHLCV, auto-detect significant swing highs/lows (pivots). Compute Fibonacci retracement levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) and extension levels (127.2%, 161.8%, 261.8%) from multiple swings. Find price clusters where multiple Fib levels from different swings align within 0.5%. Returns MetricCard (strongest confluences) + TableBlock of all Fib levels sorted by price.
+  - Create: `frontend/src/lib/server/indicators/fibonacci.ts`, `fibonacci.test.ts`
+  - Create: `frontend/src/lib/server/tools/fibonacci.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Retracement levels on known swing, extension levels, confluence detection.
+
+- [ ] **T-903**: Heatmap Block Renderer
+  - Status: PENDING
+  - Spec: Render HeatmapBlock in the UI (currently placeholder). Color scale from red (negative) to green (positive). Hover tooltip with exact value. Used by correlation matrix, intermarket, seasonality, MTF tools. Responsive grid layout.
+  - Modify: `frontend/src/lib/components/blocks/HeatmapBlock.svelte`
+  - Tests: Render snapshot with mock heatmap data, color scale edge cases.
+
+- [ ] **T-904**: LLM-Powered Market Summary
+  - Status: PENDING
+  - Spec: Tool `get_market_summary` — runs 5 key tools in parallel (market data top movers, yield curve, news sentiment, market regime BTC, intermarket risk signal), then synthesises into a concise structured summary: overall market tone (risk-on/off/neutral), key events to watch, top opportunities. Returns TextBlock (AI summary) + MetricCard (key metrics) + sources. 15 min cache.
+  - Create: `frontend/src/lib/server/tools/marketSummary.tool.ts`, `marketSummary.tool.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Mock sub-tool responses, summary assembly, cache behaviour.
+
+- [ ] **T-905**: Strategy Performance Attribution
+  - Status: PENDING | Depends: T-104, T-305
+  - Spec: Tool `attribute_performance` — given a set of closed trades (from trade journal or backtest), break down performance by: day of week, time of day, market regime (at entry), setup type, entry signal, holding period. Identify best/worst conditions. Returns MetricCard (best conditions) + multiple breakdown TableBlocks.
+  - Create: `frontend/src/lib/server/portfolio/attribution.ts`, `attribution.test.ts`
+  - Create: `frontend/src/lib/server/tools/attribution.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Attribution by DOW, by regime, by setup type.
+
+---
+
 ## Completed
 <!-- Tasks move here when done -->
 
