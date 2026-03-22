@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2612 passing
+> Tests: 2659 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -130,8 +130,8 @@
   - Create: `data/tradingQuiz.data.ts`, `tools/tradingQuiz.tool.ts`
   - Reuse: OHLCV provider, indicator engine, memory tool
 
-- [ ] **T-1405**: Custom Indicator Builder
-  - Status: PENDING
+- [x] **T-1405**: Custom Indicator Builder
+  - Status: DONE
   - Spec: Tool `build_indicator` — NL input ("EMA 20 crossover EMA 50 + RSI below 30") → composable indicator definition using existing engine functions. Generate equivalent PineScript v6 code. Test on recent data. Store custom indicators in Supabase. Returns ChartBlock (custom indicator on recent data) + TextBlock (PineScript v6 code) + MetricCard (signal count, current state).
   - Create: `data/indicatorBuilder.data.ts`, `tools/indicatorBuilder.tool.ts`
   - Reuse: indicator engine (`engine.ts`, `confluence.ts`)
