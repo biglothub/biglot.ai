@@ -458,12 +458,13 @@
   - Tests: Render snapshot with mock heatmap data, color scale edge cases.
   - Session notes (2026-03-22): HeatmapBlock.svelte was already fully implemented (pre-existing). Component: table grid with redgreen/goldblue color scales, alpha-scaled cell backgrounds (norm = value/maxAbs), hover brightness, overflow-x: auto for wide tables. Tests cover type shape, calcMaxAbs, cellBg color logic (redgreen/goldblue), clamping, data variants. 21 tests, 1592 total passing.
 
-- [ ] **T-904**: LLM-Powered Market Summary
-  - Status: PENDING
+- [x] **T-904**: LLM-Powered Market Summary
+  - Status: DONE
   - Spec: Tool `get_market_summary` — runs 5 key tools in parallel (market data top movers, yield curve, news sentiment, market regime BTC, intermarket risk signal), then synthesises into a concise structured summary: overall market tone (risk-on/off/neutral), key events to watch, top opportunities. Returns TextBlock (AI summary) + MetricCard (key metrics) + sources. 15 min cache.
   - Create: `frontend/src/lib/server/tools/marketSummary.tool.ts`, `marketSummary.tool.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Mock sub-tool responses, summary assembly, cache behaviour.
+  - Session notes (2026-03-22): marketSummary.tool.ts: 5 parallel fetches (fetchOHLCV BTC→analyzeRegime, buildIntermarketSnapshot, buildYieldCurveSnapshot, fetchNewsFeed, Binance 24h tickers). calcTone (composite = (riskScore + (sentiment-50)) / 2 — risk-on/>20, risk-off/<-20, mixed/>40 divergence, neutral otherwise). buildSummaryText (structured Markdown with overbought/inverted warnings). get_market_summary: MetricCard (tone, BTC regime/RSI/24h, yield curve/spread, news sentiment, top mover) + TextBlock. 22 tests, 1675 total passing.
 
 - [ ] **T-905**: Strategy Performance Attribution
   - Status: PENDING | Depends: T-104, T-305
@@ -473,13 +474,13 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Attribution by DOW, by regime, by setup type.
 
-- [ ] **T-906**: Fibonacci Confluence Tool
-  - Status: PENDING | Depends: T-101
-  - Spec: Tool `get_fibonacci_confluence` — given OHLCV, auto-detect significant swing highs/lows (pivots, lookback 10). Compute Fibonacci retracement levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) and extension levels (127.2%, 161.8%, 261.8%) from the most recent 3 major swings. Find price clusters where multiple Fib levels from different swings align within 0.5% of each other (confluence zones). Returns MetricCard (current price vs nearest Fib, strongest confluences) + TableBlock of all Fib levels sorted by price proximity, with zone confluences highlighted.
-  - Create: `frontend/src/lib/server/indicators/fibonacci.ts`, `fibonacci.test.ts`
-  - Create: `frontend/src/lib/server/tools/fibonacci.tool.ts`
+- [x] **T-906**: Fibonacci Confluence Tool
+  - Status: DONE
+  - Spec: Tool `scan_fibonacci_confluence` — given OHLCV, auto-detect significant swing highs/lows (pivots). Compute Fibonacci retracement and extension levels from multiple swings. Find price clusters where multiple Fib levels align within tolerance. Returns MetricCard (nearest levels) + TableBlock sorted by price.
+  - Create: `frontend/src/lib/server/indicators/fibConfluence.ts`, `fibConfluence.test.ts`
+  - Create: `frontend/src/lib/server/tools/fibConfluence.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
-  - Tests: Retracement levels on known high/low, extension levels, confluence detection (multiple overlapping zones).
+  - Session notes (2026-03-22): Pre-existing implementation. fibConfluence.ts + fibConfluence.tool.ts already committed. Tests in fibConfluence.test.ts. Part of 1675 total passing.
 
 ---
 
