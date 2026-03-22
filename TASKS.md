@@ -245,6 +245,52 @@
 
 ---
 
+## Phase 6: Market Intelligence & Advanced Analysis
+
+- [x] **T-601**: Smart Money Concepts (SMC) Tool
+  - Status: DONE
+  - Spec: Tool `analyze_smc` — Institutional order flow concepts: Order Blocks (bullish/bearish demand/supply zones), Fair Value Gaps (FVGs/imbalances), Break of Structure (BOS), Change of Character (CHOCH), and Liquidity Zones (equal highs = buy-side, equal lows = sell-side). Compute overall market bias (-100 to +100). Returns MetricCardBlock + key levels table + structure breaks table.
+  - Create: `frontend/src/lib/server/indicators/smc.ts`, `smc.test.ts`
+  - Create: `frontend/src/lib/server/tools/smc.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: FVG detection, OB detection, BOS/CHOCH, liquidity zones, bias calc.
+  - Session notes (2026-03-22): smc.ts: detectFairValueGaps (bullish/bearish 3-candle imbalances, fillPct tracking), detectOrderBlocks (last opposing candle before impulse from pivot, mitigated flag, strength 0-1, top-10), detectMarketStructure (HH/HL/LH/LL classification, BOS=continuation, CHOCH=first reversal signal), detectLiquidityZones (equal highs=BSL, equal lows=SSL, swept flag). calcSMCBias (-100..+100 from last break, recent history, OB positions). Tool: analyze_smc returns MetricCard (bias label, score, last BOS, OB counts, FVG/liquidity counts) + key levels table (OBs+FVGs+liquidity sorted by distance) + structure breaks table. 39 tests, 1088 total passing.
+
+- [ ] **T-602**: News Sentiment Feed
+  - Status: PENDING
+  - Spec: Tool `get_news_sentiment` — aggregate financial news from RSS feeds (Reuters, CoinDesk, Yahoo Finance), compute per-symbol NLP sentiment (positive/negative/neutral keyword scoring), return headlines table + sentiment gauge. Cache 10 min.
+  - Create: `frontend/src/lib/server/tools/newsSentiment.tool.ts`, `frontend/src/lib/server/data/newsFeed.data.ts`, `newsFeed.data.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: RSS parsing, sentiment scoring, symbol filtering.
+
+- [ ] **T-603**: Paper Trading Engine
+  - Status: PENDING
+  - Spec: Virtual live-trading sandbox. Tools: `paper_buy`, `paper_sell`, `paper_portfolio`. Supabase `paper_trades` table with symbol, side, qty, entry_price, exit_price, pnl. Real-time prices from marketData tool. Dashboard widget.
+  - Create: `frontend/src/lib/server/paperTrading/paperTrader.ts`, `paperTrader.test.ts`
+  - Create: `frontend/src/lib/server/tools/paperTrading.tool.ts`
+  - Create: `frontend/sql/paper_trades.sql`, `frontend/src/lib/components/dashboard/PaperPortfolio.svelte`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Buy/sell execution, PnL calculation, portfolio snapshot.
+
+- [ ] **T-604**: Market Regime Detection
+  - Status: PENDING
+  - Spec: Tool `detect_market_regime` — classify current regime: trending_up, trending_down, ranging, high_volatility. Uses ADX (trend strength), ATR-to-price ratio (volatility), RSI extremes, and market structure. Returns GaugeBlock + MetricCard per indicator.
+  - Create: `frontend/src/lib/server/indicators/regime.ts`, `regime.test.ts`
+  - Create: `frontend/src/lib/server/tools/marketRegime.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Known regime scenarios (strong ADX = trending, low ADX = ranging).
+
+- [ ] **T-605**: AI Daily Market Briefing
+  - Status: PENDING
+  - Spec: Tool `get_daily_briefing` + scheduled endpoint. Auto-generates morning summary: top crypto movers (24h), macro events today, active signals from scanner, portfolio PnL. Delivers via Telegram. Route: `/api/briefing` (GET to trigger manually, POST for cron).
+  - Create: `frontend/src/lib/server/briefing/dailyBriefing.ts`, `dailyBriefing.test.ts`
+  - Create: `frontend/src/lib/server/tools/dailyBriefing.tool.ts`
+  - Create: `frontend/src/routes/api/briefing/+server.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`
+  - Tests: Briefing assembly, Telegram formatting, mock market data.
+
+---
+
 ## Completed
 <!-- Tasks move here when done -->
 
