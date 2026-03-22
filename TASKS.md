@@ -415,13 +415,14 @@
   - Tests: Single swing retracements, multi-swing confluence detection, clustering, zone classification.
   - Session notes (2026-03-22): fibConfluence.ts: computeSwingFibLevels (5 retracements + 2 ext↑ + 2 ext↓ = 9 levels per swing), clusterFibLevels (greedy sort-then-merge within clusterPct%), buildConfluenceZone (centroid, priceMin/Max, zoneType support/resistance/pivot by distancePct), findFibConfluenceZones (pivot detection → extractSwings → compute all levels → cluster → filter minStrength≥2 → sort by strength), fmtFibPrice. Tool: scan_fibonacci_confluence — injectable maxSwings/lookback/clusterPct params, 15 min cache. 29 tests, 1621 total passing.
 
-- [ ] **T-904**: Monte Carlo Portfolio Simulation
-  - Status: PENDING | Depends: T-302
+- [x] **T-904**: Monte Carlo Portfolio Simulation
+  - Status: DONE | Depends: T-302
   - Spec: Tool `simulate_portfolio` — Monte Carlo simulation (1000 paths, configurable) using historical daily returns from portfolio positions. Compute: median final value, 5th/95th percentile band, probability of reaching target, probability of ruin (drawdown > threshold), expected max drawdown distribution. Returns MetricCard (median return, risk of ruin %, target probability) + TableBlock (percentile outcomes at 30/60/90/180/365 days).
   - Create: `frontend/src/lib/server/risk/monteCarlo.ts`, `monteCarlo.test.ts`
   - Create: `frontend/src/lib/server/tools/monteCarlo.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Path generation, percentile extraction, risk-of-ruin calculation, known distributions.
+  - Session notes (2026-03-22): monteCarlo.ts: percentile (sorted array), createRNG (xorshift PRNG, seed=12345 for reproducibility), sampleWithReplacement (bootstrap), simulatePath (sequential equity tracking, peak for max drawdown, hitTarget/hitRuin flags, floor at 0), getHorizonCheckpoints (standard intervals ≤ horizon), runMonteCarlo (1000 paths, collects final equity + max DD + per-checkpoint percentiles). Tool: simulate_portfolio — fetches closedTrades (needs ≥5), pnlUSD as returns, configurable initial_capital/target_return/ruin_threshold/paths. MetricCard (4 risk metrics) + percentile table. 32 tests, 1675 total passing.
 
 - [ ] **T-905**: AI Trade Idea Generator
   - Status: PENDING | Depends: T-604, T-202, T-102
