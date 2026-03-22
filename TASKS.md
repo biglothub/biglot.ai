@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2235 passing
+> Tests: 2318 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -72,14 +72,14 @@
   - Create: `data/tradeChecklist.data.ts`, `tools/tradeChecklist.tool.ts`, `types/contentBlock.ts` (add ChecklistBlock), `components/blocks/ChecklistBlock.svelte`
   - Reuse: regime, confluence, position sizing, economic calendar, trade journal
 
-- [ ] **T-1305**: Narrative Market Explainer
-  - Status: PENDING
+- [x] **T-1305**: Narrative Market Explainer
+  - Status: DONE
   - Spec: Tool `explain_market` — "Why is BTC dropping?" Collect recent price action, news, macro events, on-chain flows, sentiment shifts, correlations. LLM synthesizes coherent narrative explaining current market behavior. Bilingual Thai/English. Returns ResearchReportBlock (sections: Price Action Summary, Key Drivers, Supporting Data, What to Watch Next) + SourcesBlock.
   - Create: `data/narrativeExplainer.data.ts`, `tools/narrativeExplainer.tool.ts`
   - Reuse: all existing data tools (news, macro, on-chain, derivatives, indicators)
 
-- [ ] **T-1304**: Adaptive Strategy Recommender
-  - Status: PENDING
+- [x] **T-1304**: Adaptive Strategy Recommender
+  - Status: DONE
   - Spec: Tool `recommend_strategy` — match current market conditions to strategy library: trend following, mean reversion, breakout, range trading, momentum, carry trade, pairs/spread, volatility. Each strategy has ideal conditions profile. Rank by expected edge in current regime. Include historical win-rate per regime. Returns MetricCard (top strategy, current regime) + TableBlock (ranked strategies with match score) + TextBlock (AI explanation).
   - Create: `data/strategyRecommender.data.ts`, `tools/strategyRecommender.tool.ts`
   - Reuse: regime detector, macro indicators, correlation data
