@@ -66,6 +66,7 @@ vi.mock('./tools/liquidationHeatmap.tool', () => ({}));
 vi.mock('./tools/footprint.tool', () => ({}));
 vi.mock('./tools/dcaBot.tool', () => ({}));
 vi.mock('./tools/gridBot.tool', () => ({}));
+vi.mock('./tools/scheduledBriefing.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({

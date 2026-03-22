@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2160 passing
+> Tests: 2235 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -50,8 +50,8 @@
   - Create: `data/gridBot.data.ts`, `tools/gridBot.tool.ts`
   - Reuse: `paperTrader.ts`, regime detector
 
-- [ ] **T-1208**: Automated Morning Briefing + Telegram
-  - Status: PENDING | Depends: T-1201
+- [x] **T-1208**: Automated Morning Briefing + Telegram
+  - Status: DONE
   - Spec: Tool `configure_briefing` — scheduled delivery of daily briefing. Config: delivery time (e.g. 07:00 ICT), watchlist, sections (macro/crypto/gold/portfolio), channel (in-app + Telegram). At scheduled time, runs get_daily_briefing internally, formats as compact Telegram HTML, pushes. Returns MetricCard (next delivery, active/paused) + TableBlock (configured sections) + TextBlock (preview).
   - Create: `data/scheduledBriefing.data.ts`, `tools/scheduledBriefing.tool.ts`
   - Reuse: `dailyBriefing.tool.ts`, `telegram.server.ts`
