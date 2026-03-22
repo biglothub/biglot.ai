@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2075 passing
+> Tests: 2116 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -32,8 +32,8 @@
   - Create: `data/liquidationHeatmap.data.ts`, `tools/liquidationHeatmap.tool.ts`
   - Reuse: `derivatives.data.ts`
 
-- [ ] **T-1207**: Footprint Chart / Tape Reader
-  - Status: PENDING
+- [x] **T-1207**: Footprint Chart / Tape Reader
+  - Status: DONE
   - Spec: Tool `get_footprint_data` — aggregate Binance aggTrades into footprint data: bid/ask volume per price level per candle, delta (buy - sell) per level, cumulative volume delta (CVD), absorption detection (large opposing orders that don't move price), iceberg order detection, aggressive buyer/seller imbalance zones. Returns MetricCard (net delta, absorption events, dominant side) + TableBlock (footprint: price level, bid vol, ask vol, delta) + GaugeBlock (buy/sell pressure).
   - Create: `data/footprint.data.ts`, `tools/footprint.tool.ts`
   - Reuse: `orderFlow.data.ts` patterns

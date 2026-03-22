@@ -63,6 +63,7 @@ vi.mock('./tools/smartAlerts.tool', () => ({}));
 vi.mock('./tools/anomalyDetector.tool', () => ({}));
 vi.mock('./tools/multiExchange.tool', () => ({}));
 vi.mock('./tools/liquidationHeatmap.tool', () => ({}));
+vi.mock('./tools/footprint.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({

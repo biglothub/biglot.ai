@@ -1,6 +1,7 @@
 # CHANGELOG - BigLot.ai
 
 ## 2026-03-22
+- **T-1207**: Footprint Chart / Tape Reader — aggregates Binance aggTrades into footprint: bid/ask volume per price level per 1-min candle, CVD, absorption detection (bid/ask absorbed near candle extremes), imbalance zones; MetricCard + TableBlock + GaugeBlock. 41 tests (2116 total)
 - **T-1206**: Liquidation Heatmap — estimates long/short liquidation clusters by leverage tier (5x–100x) from Binance OI + long/short ratio; signed HeatmapBlock (red=long liq↓, green=short liq↑), MetricCard, magnetic price levels. 41 tests (2075 total)
 - **T-1205**: Multi-Exchange Price Aggregator — fetches BTC/ETH/any spot price from Binance, Bybit, OKX, Coinbase in parallel; computes max spread, best buy/sell venue, cross-exchange arb detection (>0.1% threshold), volume distribution. 23 tests (2034 total)
 - **T-1202**: Market Anomaly Detector — scans watchlist for volume spikes >3x avg, price gaps >2 ATR, volatility expansion, liquidation cascades, correlation breaks vs BTC; ranked by severity score. 26 tests (2011 total)
