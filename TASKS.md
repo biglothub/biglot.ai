@@ -518,6 +518,35 @@
 
 ---
 
+## Phase 11: Portfolio Intelligence & Optimization
+
+- [x] **T-1101**: Efficient Frontier & Portfolio Optimization
+  - Status: DONE
+  - Spec: Tool `optimize_portfolio` — given a list of assets, fetch 180d daily OHLCV, compute log returns, mean-return vector and covariance matrix (annualized ×252). Run Monte Carlo simulation (2000 random weight portfolios). Identify: minimum-variance portfolio, maximum-Sharpe-ratio portfolio, and equal-weight portfolio. Return MetricCard (max-Sharpe weights + Sharpe/return/risk) + comparison TableBlock (3 portfolios × asset weights) + frontier scatter TableBlock (top 50 frontier points by risk).
+  - Create: `frontend/src/lib/server/risk/efficientFrontier.ts`, `efficientFrontier.test.ts`
+  - Create: `frontend/src/lib/server/tools/efficientFrontier.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: log-return computation, covariance matrix, portfolio stats (return/risk/Sharpe), min-variance and max-Sharpe identification, edge cases (single asset, all-same-price).
+  - Session notes (2026-03-22): efficientFrontier.ts: computeLogReturns (guards against zero prices), annualisedMean (×252), computeCovMatrix (Bessel-corrected ×252, symmetric), portfolioStats (w^T·Cov·w variance, Sharpe=(ret-rfr)/risk), randomWeights (Dirichlet via −ln(U) sampling), createRNG (xorshift). runEfficientFrontier: aligns series to shortest, 2000-portfolio Monte Carlo, Pareto-filters efficient frontier (sort by risk, keep running max-return), down-samples to ≤50 scatter points. Tool: optimize_portfolio — MetricCard (max-Sharpe weights, return/risk/Sharpe vs benchmarks) + weights comparison table (3 portfolios) + frontier scatter table. 30 min cache. 43 tests, 1879 total passing.
+
+- [ ] **T-1102**: Historical Scenario / Stress Test Tool
+  - Status: PENDING | Depends: T-1101
+  - Spec: Tool `stress_test_portfolio` — apply 8 predefined historical shock scenarios to a portfolio (COVID crash -34%, 2008 GFC -57%, 2022 Crypto winter -75% BTC, 2020 BTC halving +300%, DotCom crash -78%, 2013 BTC rally +5000%, taper tantrum bonds, 2018 BTC bear -84%). Per scenario: compute portfolio PnL given current weights and asset betas. Returns MetricCard (worst scenario PnL, best scenario, current max-risk scenario) + scenarios TableBlock.
+  - Create: `frontend/src/lib/server/risk/stressTest.ts`, `stressTest.test.ts`
+  - Create: `frontend/src/lib/server/tools/stressTest.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Scenario application, portfolio loss calculation, worst/best scenario identification.
+
+- [ ] **T-1103**: Funding Rate Arbitrage Scanner
+  - Status: PENDING
+  - Spec: Tool `scan_funding_arb` — scan top 20 USDT perpetual futures on Binance for funding rate arbitrage opportunities. For each symbol: current funding rate (annualised %), spot vs perp price basis (%), combined carry = funding - basis decay. Identify: positive carry (buy spot + short perp = earn funding), negative carry (reverse). Min 10% annualised threshold. Returns MetricCard (best opportunity, total positive/negative carry count) + opportunities TableBlock sorted by absolute carry.
+  - Create: `frontend/src/lib/server/data/fundingArb.data.ts`, `fundingArb.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/fundingArb.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Carry calculation, basis computation, opportunity classification, threshold filtering.
+
+---
+
 ## Completed
 <!-- Tasks move here when done -->
 
