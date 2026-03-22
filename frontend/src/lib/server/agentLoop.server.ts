@@ -81,6 +81,7 @@ import './tools/scenarioSimulator.tool';
 import './tools/journalPatterns.tool';
 import './tools/warRoom.tool';
 import './tools/riskDashboard.tool';
+import './tools/pnlReport.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

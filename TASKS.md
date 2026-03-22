@@ -118,8 +118,8 @@
   - Create: `data/riskDashboard.data.ts`, `tools/riskDashboard.tool.ts`
   - Reuse: all existing risk tools, portfolio tracker, Monte Carlo, stress test
 
-- [ ] **T-1402**: P&L Statement & Tax Report
-  - Status: PENDING
+- [x] **T-1402**: P&L Statement & Tax Report
+  - Status: DONE
   - Spec: Tool `generate_pnl_report` — P&L from trade journal + paper trading. Accounting methods: FIFO, LIFO, average cost. Realised/unrealised PnL, fees, net PnL, holding period (short/long-term). Thai tax 15% capital gains estimate. Group by asset, month, quarter. Returns MetricCard (total realised PnL, fees, net, tax estimate) + TableBlock (monthly summary) + TableBlock (per-asset breakdown) + TextBlock (tax notes + disclaimers).
   - Create: `data/pnlReport.data.ts`, `tools/pnlReport.tool.ts`
   - Reuse: `journal.ts`, `paperTrader.ts`
