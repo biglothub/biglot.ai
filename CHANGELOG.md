@@ -1,6 +1,7 @@
 # CHANGELOG - BigLot.ai
 
 ## 2026-03-22
+- **T-1202**: Market Anomaly Detector — scans watchlist for volume spikes >3x avg, price gaps >2 ATR, volatility expansion, liquidation cascades, correlation breaks vs BTC; ranked by severity score. 26 tests (2011 total)
 - **Pipeline v2**: Auto-dev pipeline with research phase, quality gates, git rollback
 - **T-1103**: Funding Rate Arbitrage Scanner. 29 tests (1942 total)
 - **T-1201**: Smart Alert Engine + Telegram Push — compound alert conditions (price+RSI, price+volume spike, correlation break), check_now evaluates via live OHLCV+RSI+Pearson correlation, pushes Telegram. 43 tests (1985 total)

@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 1985 passing
+> Tests: 2011 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -15,8 +15,8 @@
   - Modify: none
   - Reuse: `alertEngine`, `telegram.server.ts`, indicator engine
 
-- [ ] **T-1202**: Market Anomaly Detector
-  - Status: PENDING
+- [x] **T-1202**: Market Anomaly Detector
+  - Status: DONE
   - Spec: Tool `detect_anomalies` — scan watchlist for statistical anomalies: volume spikes >3x 20-day avg, price gaps >2 ATR, unusual volatility expansion, correlation breaks vs BTC/SPX, liquidation cascades. Rank by severity score. LLM generates explanation for each anomaly. Returns MetricCard (anomaly count, highest severity) + TableBlock (ranked anomalies) + TextBlock (AI explanation).
   - Create: `data/anomalyDetector.data.ts`, `tools/anomalyDetector.tool.ts`
   - Reuse: `derivatives.data.ts`, `crossAsset.tool.ts`, indicator engine (ATR, volume)

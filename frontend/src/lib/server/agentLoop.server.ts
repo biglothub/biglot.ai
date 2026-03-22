@@ -65,6 +65,7 @@ import './tools/efficientFrontier.tool';
 import './tools/stressTest.tool';
 import './tools/fundingArb.tool';
 import './tools/smartAlerts.tool';
+import './tools/anomalyDetector.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
