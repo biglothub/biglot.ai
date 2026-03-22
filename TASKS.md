@@ -397,13 +397,14 @@
   - Tests: Single-asset screening, filter application (RSI, MA, MACD, volume), score ranking, default watchlist, edge cases (no data, insufficient candles).
   - Session notes (2026-03-22): screener.data.ts: screenAsset (RSI/SMA50/SMA200/MACD/volumeRatio/ATR% — handles flat-candle RSI=100 edge case, NaN-safe via isNaN check), checkTrend (6 trend types incl. golden/death cross), screenAssets (batch + sort by score desc then change24h). screener.tool.ts: screen_assets — parallel fetchOHLCV for all symbols, 10 min cache, MetricCard + results table. 36 tests, 1550 total passing.
 
-- [ ] **T-902**: Crypto Market Dominance Tool
-  - Status: PENDING
+- [x] **T-902**: Crypto Market Dominance Tool
+  - Status: DONE
   - Spec: Tool `get_market_dominance` — fetch global crypto market data from CoinGecko `/global` endpoint: total market cap, BTC dominance %, ETH dominance %, alt dominance %, 24h market cap change %, active cryptocurrencies count. Classify market sentiment (BTC-led / ETH-led / alt-season / risk-off) based on dominance thresholds. 30 min cache. Returns MetricCard (BTC/ETH/alt dom, total cap, 24h change) + classification TableBlock.
   - Create: `frontend/src/lib/server/data/dominance.data.ts`, `dominance.data.test.ts`
   - Create: `frontend/src/lib/server/tools/dominance.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Dominance calculation, sentiment classification, mock CoinGecko response.
+  - Session notes (2026-03-22): dominance.data.ts: GlobalMarketData type, defaultGlobalFetcher (CoinGecko /global, extracts btc/eth dom from market_cap_percentage map), classifyMarketSentiment (risk_off>55% → alt_season>40% → eth_led>20%+btc<48% → btc_led), sentimentLabel/Description, buildDominanceSnapshot (injectable fetcher). get_market_dominance tool: MetricCard (6 metrics) + dominance table + regime table. 30 min cache. 21 tests, 1571 total passing.
 
 - [ ] **T-903**: Fibonacci Confluence Zone Scanner
   - Status: PENDING | Depends: T-101

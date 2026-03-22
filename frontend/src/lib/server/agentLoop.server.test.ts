@@ -46,6 +46,7 @@ vi.mock('./tools/yieldCurve.tool', () => ({}));
 vi.mock('./tools/candlePatterns.tool', () => ({}));
 vi.mock('./tools/tvAlerts.tool', () => ({}));
 vi.mock('./tools/screener.tool', () => ({}));
+vi.mock('./tools/dominance.tool', () => ({}));
 vi.mock('./tools/watchlistScanner.tool', () => ({}));
 
 // Mock the tool registry functions
