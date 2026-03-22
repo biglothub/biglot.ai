@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2034 passing
+> Tests: 2075 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -26,8 +26,8 @@
   - Spec: Tool `compare_exchanges` — fetch price/volume from Binance, Bybit (v5 public), OKX (v5 public), Coinbase (public) for a symbol. Compute: price spread between exchanges, volume distribution %, best bid/ask across venues, arbitrage opportunity if spread > fee threshold. Returns MetricCard (best buy/sell venue, max spread%) + TableBlock (per-exchange price/volume/spread) + TextBlock (arb analysis if spread > 0.1%).
   - Create: `data/multiExchange.data.ts`, `tools/multiExchange.tool.ts`
 
-- [ ] **T-1206**: Liquidation Heatmap
-  - Status: PENDING
+- [x] **T-1206**: Liquidation Heatmap
+  - Status: DONE
   - Spec: Tool `get_liquidation_heatmap` — estimate liquidation clusters by leverage tier (5x, 10x, 25x, 50x, 100x) from open interest distribution + funding rate direction. Project liquidation levels above/below current price. Identify "magnetic" price levels. Returns MetricCard (nearest cluster, estimated volume) + HeatmapBlock (price levels × leverage tiers) + TextBlock (interpretation).
   - Create: `data/liquidationHeatmap.data.ts`, `tools/liquidationHeatmap.tool.ts`
   - Reuse: `derivatives.data.ts`

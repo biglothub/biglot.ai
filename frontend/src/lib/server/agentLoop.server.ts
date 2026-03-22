@@ -67,6 +67,7 @@ import './tools/fundingArb.tool';
 import './tools/smartAlerts.tool';
 import './tools/anomalyDetector.tool';
 import './tools/multiExchange.tool';
+import './tools/liquidationHeatmap.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
