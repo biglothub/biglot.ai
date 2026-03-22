@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2116 passing
+> Tests: 2160 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -38,8 +38,8 @@
   - Create: `data/footprint.data.ts`, `tools/footprint.tool.ts`
   - Reuse: `orderFlow.data.ts` patterns
 
-- [ ] **T-1203**: DCA Bot Engine (Paper)
-  - Status: PENDING | Depends: T-1201
+- [x] **T-1203**: DCA Bot Engine (Paper)
+  - Status: DONE
   - Spec: Tool `manage_dca_bot` — automated Dollar-Cost Averaging on paper trading. Config: asset, amount per interval, interval (daily/weekly/biweekly/monthly), optional buy-the-dip multiplier (2x when price < MA by X%). Track cost basis, avg price, total invested, unrealised PnL. Uses existing paperTrader for execution. Returns MetricCard (avg cost, total invested, current value, PnL%) + TableBlock (execution history) + ChartBlock (DCA equity vs lump sum).
   - Create: `data/dcaBot.data.ts`, `tools/dcaBot.tool.ts`
   - Reuse: `paperTrader.ts`, Binance OHLCV

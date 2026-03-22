@@ -69,6 +69,7 @@ import './tools/anomalyDetector.tool';
 import './tools/multiExchange.tool';
 import './tools/liquidationHeatmap.tool';
 import './tools/footprint.tool';
+import './tools/dcaBot.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
