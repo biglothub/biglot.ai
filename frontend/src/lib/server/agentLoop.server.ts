@@ -63,6 +63,7 @@ import './tools/divergence.tool';
 import './tools/pairsTrading.tool';
 import './tools/efficientFrontier.tool';
 import './tools/stressTest.tool';
+import './tools/fundingArb.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

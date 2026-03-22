@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: World's best trading LLM
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 1913 passing
+> Tests: 1942 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -17,10 +17,7 @@
   - Spec: Tool `stress_test_portfolio` — apply 8 predefined historical shock scenarios (COVID -34%, GFC -57%, Crypto Winter -75%, BTC Halving +300%, DotCom -78%, 2013 BTC +5000%, Taper Tantrum, 2018 Bear -84%). Per scenario: portfolio PnL from weights + asset betas. Returns MetricCard (worst/best scenario) + scenarios TableBlock.
   - Session notes (2026-03-22): stressTest.ts: 8 SCENARIOS (COVID Crash, GFC 2008, 2022 Crypto Winter, 2018 BTC Bear, DotCom Crash, 2020 BTC Halving Bull, Taper Tantrum, 2013 BTC Rally). normaliseSymbol (strips USDT/USD/-USD/-USDT suffixes). findShock (exact base match → '*' wildcard). applyScenario (per-asset PnL using USD value × shock, portfolioPnlPct = totalPnlUsd/totalValue). runStressTest (runs all 8, sorts worst→best). stress_test_portfolio tool: loads from portfolio tracker or custom symbols/weights, 1h cache. 34 tests, 1913 total passing.
 
-- [ ] **T-1103**: Funding Rate Arbitrage Scanner
-  - Status: PENDING
+- [x] **T-1103**: Funding Rate Arbitrage Scanner
+  - Status: DONE
   - Spec: Tool `scan_funding_arb` — top 20 USDT perps on Binance. Per symbol: funding rate (annualised %), spot vs perp basis (%), carry = funding - basis decay. Positive carry (buy spot + short perp) / negative carry. Min 10% annualised. Returns MetricCard (best opportunity, +/- carry count) + opportunities TableBlock.
-  - Create: `frontend/src/lib/server/data/fundingArb.data.ts`, `fundingArb.data.test.ts`
-  - Create: `frontend/src/lib/server/tools/fundingArb.tool.ts`
-  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
-  - Tests: Carry calculation, basis computation, opportunity classification, threshold filtering.
+  - Session notes (2026-03-22): fundingArb.data.ts: PremiumIndexFetcher (injectable), annualise8h (rate×1095×100), buildArbOpportunity (basisPct=(mark-index)/index*100, basisAnn=basisPct×1095, carryAnn=fundingAnn-basisAnn, direction positive/negative/neutral), buildFundingArbSnapshot (batch fetch → map → filter by |carry|≥threshold → sort by |carry| desc, positiveCount/negativeCount/bestOpportunity). scan_funding_arb tool: 5 min cache. 29 tests, 1942 total passing.
