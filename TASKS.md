@@ -44,8 +44,8 @@
   - Create: `data/dcaBot.data.ts`, `tools/dcaBot.tool.ts`
   - Reuse: `paperTrader.ts`, Binance OHLCV
 
-- [ ] **T-1204**: Grid Bot Engine (Paper)
-  - Status: PENDING | Depends: T-1203
+- [x] **T-1204**: Grid Bot Engine (Paper)
+  - Status: DONE
   - Spec: Tool `manage_grid_bot` — paper grid bot for ranging markets. Config: asset, upper/lower price bounds, grid levels, investment amount. Place virtual buy orders below current price, sell orders above. Track filled grids, profit from completions, estimated APY from recent volatility. Warn if regime detector says market is trending. Returns MetricCard (grid profit, fill rate, est APY) + TableBlock (grid levels with status) + TextBlock (regime warning if trending).
   - Create: `data/gridBot.data.ts`, `tools/gridBot.tool.ts`
   - Reuse: `paperTrader.ts`, regime detector

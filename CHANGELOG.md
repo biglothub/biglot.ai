@@ -1,6 +1,7 @@
 # CHANGELOG - BigLot.ai
 
 ## 2026-03-22
+- **T-1204**: Grid Bot Engine (Paper) — paper grid bot for ranging markets; create/list/delete/status/run_now; evenly-spaced price grids with crossing detection; profit tracking per completed cycle; estimated APY; regime warning when market is trending (ADX-based); backed by Supabase grid_bots + grid_executions tables. 44 tests (2204 total)
 - **T-1203**: DCA Bot Engine (Paper) — automated Dollar-Cost Averaging with paper trades; create/list/delete/status/run_now actions; optional dip multiplier (Nx when price X% below MAn); avg cost basis, unrealised PnL, lump-sum comparison chart; all backed by Supabase dca_bots + dca_executions tables. 44 tests (2160 total)
 - **T-1207**: Footprint Chart / Tape Reader — aggregates Binance aggTrades into footprint: bid/ask volume per price level per 1-min candle, CVD, absorption detection (bid/ask absorbed near candle extremes), imbalance zones; MetricCard + TableBlock + GaugeBlock. 41 tests (2116 total)
 - **T-1206**: Liquidation Heatmap — estimates long/short liquidation clusters by leverage tier (5x–100x) from Binance OI + long/short ratio; signed HeatmapBlock (red=long liq↓, green=short liq↑), MetricCard, magnetic price levels. 41 tests (2075 total)
