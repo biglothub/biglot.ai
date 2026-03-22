@@ -467,13 +467,14 @@
   - Tests: Mock sub-tool responses, summary assembly, cache behaviour.
   - Session notes (2026-03-22): marketSummary.tool.ts: 5 parallel fetches (fetchOHLCV BTC→analyzeRegime, buildIntermarketSnapshot, buildYieldCurveSnapshot, fetchNewsFeed, Binance 24h tickers). calcTone (composite = (riskScore + (sentiment-50)) / 2 — risk-on/>20, risk-off/<-20, mixed/>40 divergence, neutral otherwise). buildSummaryText (structured Markdown with overbought/inverted warnings). get_market_summary: MetricCard (tone, BTC regime/RSI/24h, yield curve/spread, news sentiment, top mover) + TextBlock. 22 tests, 1675 total passing.
 
-- [ ] **T-905**: Strategy Performance Attribution
-  - Status: PENDING | Depends: T-104, T-305
+- [x] **T-905**: Strategy Performance Attribution
+  - Status: DONE | Depends: T-104, T-305
   - Spec: Tool `attribute_performance` — given a set of closed trades (from trade journal or backtest), break down performance by: day of week, time of day, market regime (at entry), setup type, entry signal, holding period. Identify best/worst conditions. Returns MetricCard (best conditions) + multiple breakdown TableBlocks.
   - Create: `frontend/src/lib/server/portfolio/attribution.ts`, `attribution.test.ts`
   - Create: `frontend/src/lib/server/tools/attribution.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Attribution by DOW, by regime, by setup type.
+  - Session notes (2026-03-22): attribution.ts: parseDOW (UTC-day from YYYY-MM-DD), buildRow (winRate from closed entries, avgR from non-null rMultiple), attributePerformance (groups by DOW Mon→Sun, setupType, emotion, planAdhere; findBest/findWorst require ≥3 trades; all-rows best/worst scan). attribute_performance tool: requires user_id, listJournalEntries, MetricCard (overall win rate/avgR, best/worst condition) + 4 TableBlocks (DOW, setup, emotion, plan). Fixed pre-existing tradeIdeas.tool.ts type error (netSignal → overallSignal). 30 tests, 1732 total passing.
 
 - [x] **T-906**: Fibonacci Confluence Tool
   - Status: DONE

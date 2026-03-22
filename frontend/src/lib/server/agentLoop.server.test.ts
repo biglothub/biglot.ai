@@ -50,7 +50,9 @@ vi.mock('./tools/dominance.tool', () => ({}));
 vi.mock('./tools/fibConfluence.tool', () => ({}));
 vi.mock('./tools/watchlistScanner.tool', () => ({}));
 vi.mock('./tools/marketSummary.tool', () => ({}));
+vi.mock('./tools/attribution.tool', () => ({}));
 vi.mock('./tools/monteCarlo.tool', () => ({}));
+vi.mock('./tools/tradeIdeas.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
