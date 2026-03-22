@@ -16,6 +16,7 @@
     import ResearchReportBlock from "./ResearchReportBlock.svelte";
     import ReasoningBlock from "./ReasoningBlock.svelte";
     import ChecklistBlock from "./ChecklistBlock.svelte";
+    import WarRoomBlock from "./WarRoomBlock.svelte";
 
     let { block }: { block: ContentBlock } = $props();
 </script>
@@ -65,6 +66,8 @@
     <ReasoningBlock {...block} />
 {:else if block.type === "checklist"}
     <ChecklistBlock {...block} />
+{:else if block.type === "war_room"}
+    <WarRoomBlock {...block} />
 {:else if block.type === "backtest"}
     {#await import("./BacktestBlock.svelte") then module}
         {@const BacktestBlock = module.default}

@@ -134,7 +134,8 @@ const CONTENT_BLOCK_TYPES = new Set([
     'research_report',
     'backtest',
     'reasoning',
-    'checklist'
+    'checklist',
+    'war_room'
 ] as const);
 const PLAN_STEP_STATUSES = new Set(['pending', 'running', 'complete', 'error', 'skipped'] as const);
 const PLAN_STATUSES = new Set(['planning', 'executing', 'complete', 'error'] as const);

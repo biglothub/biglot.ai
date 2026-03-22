@@ -294,6 +294,46 @@ export type ReasoningBlock = {
 	reasoning: string;        // full chain-of-thought markdown (expandable)
 };
 
+// --- War Room Block (T-1308) - Multi-AI War Room ---
+
+export type WarRoomPanelistId = 'technical' | 'macro' | 'quant' | 'risk';
+
+export type WarRoomPanelist = {
+	id: WarRoomPanelistId;
+	name: string;
+	model: string;
+	color: string;
+	emoji: string;
+	specialty: string;
+};
+
+export type WarRoomTurn = {
+	turnId: string;
+	panelistId: WarRoomPanelistId;
+	content: string;           // markdown analysis text
+	model: string;
+	dataCitations: string[];   // specific data points cited
+	stance: 'bullish' | 'bearish' | 'neutral';
+	confidence: number;        // 1-10
+	keyPoints: string[];       // 2-4 bullet points
+	startedAt: number;
+	completedAt?: number;
+};
+
+export type WarRoomBlock = {
+	type: 'war_room';
+	warRoomId: string;
+	topic: string;
+	panelists: WarRoomPanelist[];
+	turns: WarRoomTurn[];
+	consensusDirection: 'bullish' | 'bearish' | 'neutral';
+	consensusConfidence: number;  // 1-10
+	dissentCount: number;
+	consensusSummary: string;
+	status: 'complete' | 'error';
+	createdAt: number;
+};
+
 // --- Backtest Block (T-105) ---
 
 export type BacktestTrade = {
@@ -363,7 +403,8 @@ export type ContentBlock =
 	| ResearchReportBlock
 	| BacktestBlock
 	| ReasoningBlock
-	| ChecklistBlock;
+	| ChecklistBlock
+	| WarRoomBlock;
 
 export type ContentBlockType = ContentBlock['type'];
 
