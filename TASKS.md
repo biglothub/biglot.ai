@@ -90,8 +90,8 @@
   - Create: `data/postTradeAnalyst.data.ts`, `tools/postTradeAnalyst.tool.ts`
   - Reuse: `journal.ts`, indicator engine, OHLCV provider
 
-- [ ] **T-1306**: Risk Scenario Simulator (What-If)
-  - Status: PENDING
+- [x] **T-1306**: Risk Scenario Simulator (What-If)
+  - Status: DONE
   - Spec: Tool `simulate_scenario` — NL input ("What if Fed cuts 50bps and BTC breaks $100k?"). LLM parses to quantitative assumptions (asset shocks, correlation changes, vol shifts). Apply to portfolio via existing stress test infrastructure. Returns MetricCard (projected PnL, most exposed position) + TableBlock (per-asset impact) + TextBlock (implications + hedging suggestions).
   - Create: `data/scenarioSimulator.data.ts`, `tools/scenarioSimulator.tool.ts`
   - Reuse: `stressTest.ts`, portfolio tracker
