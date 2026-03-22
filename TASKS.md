@@ -274,8 +274,8 @@
   - Tests: Buy/sell execution, PnL calculation, portfolio snapshot.
   - Session notes (2026-03-22): paper_trades table (uuid pk, user_id, symbol, side long/short, qty, entry_price, exit_price, pnl, is_open bool). paperTrader.ts: calcUnrealisedPnL/Pct (pure), buildPaperPortfolio (priceMap→PaperTradeWithPnL), openPaperTrade, closePaperTrade (fetch+update), listOpenTrades, listClosedTrades, getOpenTradeBySymbol. Tools: paper_buy (long at market), paper_sell (close existing long → else open short), paper_portfolio (MetricCard + open positions table + closed trades table). PaperPortfolio.svelte dashboard widget. Fixed Supabase mock singleton pattern (mockFrom) and as-never casts for TS strict mode. 28 tests, 1158 total passing.
 
-- [ ] **T-604**: Market Regime Detection
-  - Status: PENDING
+- [x] **T-604**: Market Regime Detection
+  - Status: DONE
   - Spec: Tool `detect_market_regime` — classify current regime: trending_up, trending_down, ranging, high_volatility. Uses ADX (trend strength), ATR-to-price ratio (volatility), RSI extremes, and market structure. Returns GaugeBlock + MetricCard per indicator.
   - Create: `frontend/src/lib/server/indicators/regime.ts`, `regime.test.ts`
   - Create: `frontend/src/lib/server/tools/marketRegime.tool.ts`
@@ -297,6 +297,15 @@
 <!-- Tasks move here when done -->
 
 ## Session Notes
+
+### Session 2026-03-22 (T-601–T-604)
+- Completed: T-601 SMC Tool, T-602 News Sentiment Feed, T-603 Paper Trading Engine, T-604 Market Regime Detection
+- T-601: `analyze_smc` tool — Order Blocks, FVGs, BOS/CHOCH, Liquidity Zones, SMC bias score. 39 tests.
+- T-602: `get_news_sentiment` — RSS XML parsing (CoinDesk, CoinTelegraph, Reuters, Yahoo Finance), keyword NLP scoring, symbol filtering, GaugeBlock + headline table. 42 tests.
+- T-603: Paper trading engine — `paper_buy`, `paper_sell`, `paper_portfolio` tools. Supabase `paper_trades` table (long/short, is_open). Live prices via Binance. PaperPortfolio.svelte dashboard widget. 28 tests.
+- T-604: `detect_market_regime` — ADX + ATR% + RSI → trending_up/trending_down/ranging/high_volatility. GaugeBlock + MetricCard. 5 min cache. 29 tests. Total: 1187 tests.
+- Issues: Supabase mock chaining required module-level `mockFrom` (shared across calls); `vi.mocked(db.from)` pattern fails because `getSupabaseAdminClient()` creates a new fn each call.
+- Next: T-605 AI Daily Market Briefing
 
 ### Session 2026-03-22 (T-203)
 - Completed: T-203 Multi-Source OHLCV Provider
