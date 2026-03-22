@@ -424,12 +424,13 @@
   - Tests: Path generation, percentile extraction, risk-of-ruin calculation, known distributions.
   - Session notes (2026-03-22): monteCarlo.ts: percentile (sorted array), createRNG (xorshift PRNG, seed=12345 for reproducibility), sampleWithReplacement (bootstrap), simulatePath (sequential equity tracking, peak for max drawdown, hitTarget/hitRuin flags, floor at 0), getHorizonCheckpoints (standard intervals ≤ horizon), runMonteCarlo (1000 paths, collects final equity + max DD + per-checkpoint percentiles). Tool: simulate_portfolio — fetches closedTrades (needs ≥5), pnlUSD as returns, configurable initial_capital/target_return/ruin_threshold/paths. MetricCard (4 risk metrics) + percentile table. 32 tests, 1675 total passing.
 
-- [ ] **T-905**: AI Trade Idea Generator
-  - Status: PENDING | Depends: T-604, T-202, T-102
+- [x] **T-905**: AI Trade Idea Generator
+  - Status: DONE | Depends: T-604, T-202, T-102
   - Spec: Tool `generate_trade_ideas` — synthesizes current market data into 3 actionable trade ideas. Pulls: market regime (detect_market_regime output), top movers (Binance 24h), SMC key levels, candlestick patterns, signals from signal generator. Scores each idea by confluence (regime alignment + pattern + SMC). Returns 3 TradeSetupBlocks with entry zone, stop, T1/T2/T3 targets, thesis, and confidence score.
   - Create: `frontend/src/lib/server/tools/tradeIdeas.tool.ts`, `tradeIdeas.tool.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Idea generation with mock data, confluence scoring, TradeSetupBlock format.
+  - Session notes (2026-03-22): tradeIdeas.tool.ts: scoreIdea (confluenceScore + 2 if regime aligned + 1 if pattern confirms), checkRegimeAlignment (trending_up→long, trending_down→short, ranging/high_vol→both), buildIdeaSetup (±0.5 ATR entry zone, 1.5 ATR stop, T1/T2/T3 at 1.5R/3R/5R, fallback ATR=price×1% when 0), generateIdeasFromOHLCV (detectConfluence + analyzeRegime + detectPatterns → scores). generate_trade_ideas tool: parallel fetchOHLCV for default 15-symbol watchlist on 4h, returns MetricCard + ranked ideas table + TradeSetupBlock per idea. 15 min cache. 27 tests, 1732 total passing.
 
 ---
 
