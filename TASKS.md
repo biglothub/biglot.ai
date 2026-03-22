@@ -320,8 +320,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Mock Yahoo Finance prices, correlation calc, risk signal classification.
 
-- [ ] **T-704**: Seasonality Analysis Tool
-  - Status: PENDING
+- [x] **T-704**: Seasonality Analysis Tool
+  - Status: DONE
   - Spec: Tool `get_seasonality` — monthly return averages for BTC/ETH/SPY/GOLD over 5+ years from Yahoo Finance historical data. Detect strongest/weakest months, day-of-week effect. Returns HeatmapBlock (monthly heatmap) + MetricCard (best/worst months).
   - Create: `frontend/src/lib/server/tools/seasonality.tool.ts`, `frontend/src/lib/server/data/seasonality.data.ts`, `seasonality.data.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
@@ -338,6 +338,10 @@
 
 ## Completed
 <!-- Tasks move here when done -->
+
+### Session 2026-03-22 (T-701–T-704)
+- Completed: T-704 Seasonality Analysis Tool
+- seasonality.data.ts: computeMonthlyReturns (group closes by month using UTCMonth), computeDOWReturns (daily returns bucketed by UTCDay 0-6), aggregateMonthlyScores (12-entry array, median, win rate, composite score 60% avg + 40% win rate). buildSeasonalityData (mockable fetcher). get_seasonality tool: HeatmapBlock (avg return + win rate rows, MONTH_NAMES cols) + MetricCard + monthly detail table + DOW table. 4h cache. 21 tests, 1326 total passing.
 
 ### Session 2026-03-22 (T-701–T-703)
 - Completed: T-703 Intermarket Analysis Tool
