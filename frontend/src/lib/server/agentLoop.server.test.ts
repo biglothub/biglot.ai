@@ -40,6 +40,11 @@ vi.mock('./tools/elliottWave.tool', () => ({}));
 vi.mock('./tools/intermarket.tool', () => ({}));
 vi.mock('./tools/seasonality.tool', () => ({}));
 vi.mock('./tools/rebalancer.tool', () => ({}));
+vi.mock('./tools/volumeProfile.tool', () => ({}));
+vi.mock('./tools/optionsAnalytics.tool', () => ({}));
+vi.mock('./tools/yieldCurve.tool', () => ({}));
+vi.mock('./tools/candlePatterns.tool', () => ({}));
+vi.mock('./tools/tvAlerts.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({

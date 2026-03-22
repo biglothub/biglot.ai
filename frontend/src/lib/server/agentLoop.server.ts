@@ -45,6 +45,11 @@ import './tools/elliottWave.tool';
 import './tools/intermarket.tool';
 import './tools/seasonality.tool';
 import './tools/rebalancer.tool';
+import './tools/volumeProfile.tool';
+import './tools/optionsAnalytics.tool';
+import './tools/yieldCurve.tool';
+import './tools/candlePatterns.tool';
+import './tools/tvAlerts.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

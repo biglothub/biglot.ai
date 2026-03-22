@@ -337,6 +337,51 @@
 
 ---
 
+## Phase 8: Advanced Analytics & Integrations
+
+- [x] **T-801**: Volume Profile Analysis Tool
+  - Status: DONE
+  - Spec: Tool `get_volume_profile` — compute volume-at-price distribution from OHLCV data. Key levels: POC (Point of Control = price with most volume), VAH/VAL (Value Area High/Low = range containing 70% of volume), VPOC shift detection. Configurable bins (default 24). Returns MetricCard (POC, VAH, VAL, value area width%) + volume distribution TableBlock.
+  - Create: `frontend/src/lib/server/indicators/volumeProfile.ts`, `volumeProfile.test.ts`
+  - Create: `frontend/src/lib/server/tools/volumeProfile.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Known volume distributions, POC/VAH/VAL calculations, edge cases (empty, single candle).
+  - Session notes (2026-03-22): volumeProfile.ts: buildVolumeProfile (uniform volume distribution across overlapping bins, POC = highest volume bin, VAH/VAL via greedy expansion from POC until 70% volume covered), detectVPOCShift (first/second half comparison, 0.1% threshold), fmtPrice. Tool: get_volume_profile — MetricCard (POC, VAH, VAL, value area width%, price position, VPOC shift) + top-15 volume nodes table + full distribution table. Fixed fetchOHLCV result handling (FetchOHLCVResult not array). 23 tests, 1368+ total passing.
+
+- [ ] **T-802**: Options Analytics Tool
+  - Status: PENDING
+  - Spec: Tool `get_options_analytics` — Black-Scholes option pricing model. Inputs: underlying price, strike, expiry (days), risk-free rate, historical volatility (computed from OHLCV). Outputs: call/put prices, Greeks (Delta, Gamma, Theta, Vega, Rho), IV rank (current HV vs 1-year range). Returns MetricCard (price, IV, IV rank) + Greeks TableBlock.
+  - Create: `frontend/src/lib/server/indicators/blackScholes.ts`, `blackScholes.test.ts`
+  - Create: `frontend/src/lib/server/tools/optionsAnalytics.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Black-Scholes against known reference values, Greeks verification, IV rank calc.
+
+- [ ] **T-803**: Yield Curve & Macro Regime Tool
+  - Status: PENDING
+  - Spec: Tool `get_yield_curve` — fetch US Treasury yields (3m, 2y, 5y, 10y, 30y) from Yahoo Finance (^IRX, ^UST2Y, ^FVX, ^TNX, ^TYX). Compute key spreads: 2s10s, 3m10y. Classify curve: normal/flat/inverted. Historical yield data for spread trend (20-day). Returns MetricCard (spreads, classification) + yield curve TableBlock.
+  - Create: `frontend/src/lib/server/data/yieldCurve.data.ts`, `yieldCurve.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/yieldCurve.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Spread calculations, curve classification (inverted when 2s10s < 0), mock Yahoo Finance.
+
+- [ ] **T-804**: Candlestick Pattern Scanner
+  - Status: PENDING
+  - Spec: Tool `scan_candlestick_patterns` — detect classic Japanese candlestick patterns on recent OHLCV: Doji, Hammer, Inverted Hammer, Shooting Star, Hanging Man, Bullish/Bearish Engulfing, Bullish/Bearish Harami, Morning Star, Evening Star, Three White Soldiers, Three Black Crows, Marubozu. Returns bullish/bearish classification, confidence, and candle index. TableBlock of detected patterns + MetricCard (bull vs bear signal count).
+  - Create: `frontend/src/lib/server/indicators/candlePatterns.ts`, `candlePatterns.test.ts`
+  - Create: `frontend/src/lib/server/tools/candlePatterns.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Each pattern against known candlestick formations, confidence scoring.
+
+- [ ] **T-805**: TradingView Webhook Integration
+  - Status: PENDING
+  - Spec: Route `/api/tradingview` — accepts POST from TradingView alerts (JSON payload: symbol, action buy/sell/close, price, message). Validates `TV_WEBHOOK_SECRET`. Saves alert to Supabase `tv_alerts` table. Optionally executes paper trade if `auto_paper_trade=true`. Sends Telegram notification. Tool `list_tv_alerts` to review recent TradingView signals in chat.
+  - Create: `frontend/src/routes/api/tradingview/+server.ts`, `frontend/src/lib/server/data/tvAlerts.data.ts`, `tvAlerts.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/tvAlerts.tool.ts`, `frontend/sql/tv_alerts.sql`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Webhook validation, alert persistence, paper trade trigger, Telegram notification.
+
+---
+
 ## Completed
 <!-- Tasks move here when done -->
 
