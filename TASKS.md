@@ -256,12 +256,13 @@
   - Tests: FVG detection, OB detection, BOS/CHOCH, liquidity zones, bias calc.
   - Session notes (2026-03-22): smc.ts: detectFairValueGaps (bullish/bearish 3-candle imbalances, fillPct tracking), detectOrderBlocks (last opposing candle before impulse from pivot, mitigated flag, strength 0-1, top-10), detectMarketStructure (HH/HL/LH/LL classification, BOS=continuation, CHOCH=first reversal signal), detectLiquidityZones (equal highs=BSL, equal lows=SSL, swept flag). calcSMCBias (-100..+100 from last break, recent history, OB positions). Tool: analyze_smc returns MetricCard (bias label, score, last BOS, OB counts, FVG/liquidity counts) + key levels table (OBs+FVGs+liquidity sorted by distance) + structure breaks table. 39 tests, 1088 total passing.
 
-- [ ] **T-602**: News Sentiment Feed
-  - Status: PENDING
+- [x] **T-602**: News Sentiment Feed
+  - Status: DONE
   - Spec: Tool `get_news_sentiment` — aggregate financial news from RSS feeds (Reuters, CoinDesk, Yahoo Finance), compute per-symbol NLP sentiment (positive/negative/neutral keyword scoring), return headlines table + sentiment gauge. Cache 10 min.
   - Create: `frontend/src/lib/server/tools/newsSentiment.tool.ts`, `frontend/src/lib/server/data/newsFeed.data.ts`, `newsFeed.data.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: RSS parsing, sentiment scoring, symbol filtering.
+  - Session notes (2026-03-22): newsFeed.data.ts: 4 RSS sources (CoinDesk, CoinTelegraph, Reuters, Yahoo Finance). parseRSSXml (regex-based, CDATA support, HTML strip). scoreText (+1/-1 keyword matching, normalized to -1..+1). getSymbolAliases (BTCUSDT→bitcoin/btc etc., 14 symbol mappings). filterBySymbol. computeNewsSentiment (avg sentimentScore→0-100). fetchNewsFeed (Promise.allSettled, sort by pubDate, maxItems). get_news_sentiment tool: GaugeBlock + MetricCard breakdown + headlines TableBlock. 10 min cache. 42 tests, 1130 total passing.
 
 - [ ] **T-603**: Paper Trading Engine
   - Status: PENDING
