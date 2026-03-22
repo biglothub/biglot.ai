@@ -59,6 +59,7 @@ import './tools/attribution.tool';
 import './tools/monteCarlo.tool';
 import './tools/tradeIdeas.tool';
 import './tools/harmonicPatterns.tool';
+import './tools/divergence.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

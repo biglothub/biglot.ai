@@ -487,6 +487,35 @@
 
 ---
 
+## Phase 10: Pattern Intelligence & Statistical Edge
+
+- [x] **T-1001**: Harmonic Pattern Scanner
+  - Status: DONE
+  - Spec: Tool `scan_harmonic_patterns` — detect XABCD harmonic patterns (Gartley, Butterfly, Bat, Crab, Cypher) and ABCD patterns using pivot-based Fibonacci ratio validation. Each pattern has defined XA/AB/BC/CD Fibonacci ratio tolerances (±5%). Compute PRZ (Potential Reversal Zone) as average of CD leg projections. Score each detected pattern 0–100 by ratio adherence. Returns MetricCard (pattern count, strongest pattern name, PRZ price range, direction bull/bear) + TableBlock (pattern, direction, PRZ low/high, confidence, completing).
+  - Create: `frontend/src/lib/server/indicators/harmonicPatterns.ts`, `harmonicPatterns.test.ts`
+  - Create: `frontend/src/lib/server/tools/harmonicPatterns.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Each pattern type with known Fibonacci ratios, PRZ calculation, score adherence, edge cases (insufficient pivots).
+  - Session notes (2026-03-22): harmonicPatterns.ts: bestRatioScore (±5% tolerance per target), validateXABCD (standard + Cypher special case using XC/XA and CD/XC), validateXABC (partial score, max 70 for forming patterns), validateABCD, computePRZ (AD/XA + CD/BC projection average), computeABCDPRZ, deduplicatePatterns (same name+direction within 1% PRZ). scanHarmonicPatterns: scans 5-pivot XABCD windows + 4-pivot ABCD + forming XABC/ABC tail. Patterns sorted by score desc. scan_harmonic_patterns tool: MetricCard + TableBlock, 15 min cache. 39 tests, 1771 total passing.
+
+- [ ] **T-1002**: Divergence Scanner Tool
+  - Status: PENDING | Depends: T-101
+  - Spec: Tool `scan_divergences` — detect regular and hidden divergences between price swing points and oscillator values (RSI, MACD histogram, OBV). Regular divergence: price new high/low but oscillator fails → reversal. Hidden divergence: oscillator new extreme but price fails → continuation. Use last 50 candles, find up to 3 divergence pairs per oscillator. Returns MetricCard (bull/bear divergence count, strongest signal, oscillator) + TableBlock (type, oscillator, price high/low dates, signal strength, candles ago).
+  - Create: `frontend/src/lib/server/indicators/divergence.ts`, `divergence.test.ts`
+  - Create: `frontend/src/lib/server/tools/divergence.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Regular bearish/bullish divergence, hidden divergence, OBV divergence, no-divergence case.
+
+- [ ] **T-1003**: Pairs Trading & Spread Analysis Tool
+  - Status: PENDING
+  - Spec: Tool `analyze_pairs` — given two symbols, compute: Pearson correlation (30d), cointegration score via ADF test approximation (OLS spread residual variance ratio), current spread z-score (vs 20d mean/std), half-life of mean reversion (Ornstein-Uhlenbeck lambda fit). Signal: z-score > 2 → short spread, < -2 → long spread. Returns MetricCard (correlation, z-score, half-life, signal) + TableBlock (daily spread last 20 days, z-score column) + cointegration summary.
+  - Create: `frontend/src/lib/server/data/pairsTrading.data.ts`, `pairsTrading.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/pairsTrading.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Correlation calc, z-score computation, half-life estimation, known spread series.
+
+---
+
 ## Completed
 <!-- Tasks move here when done -->
 
