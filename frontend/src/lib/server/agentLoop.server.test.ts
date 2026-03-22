@@ -61,6 +61,7 @@ vi.mock('./tools/stressTest.tool', () => ({}));
 vi.mock('./tools/fundingArb.tool', () => ({}));
 vi.mock('./tools/smartAlerts.tool', () => ({}));
 vi.mock('./tools/anomalyDetector.tool', () => ({}));
+vi.mock('./tools/multiExchange.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({

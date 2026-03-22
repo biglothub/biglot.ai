@@ -1,6 +1,7 @@
 # CHANGELOG - BigLot.ai
 
 ## 2026-03-22
+- **T-1205**: Multi-Exchange Price Aggregator — fetches BTC/ETH/any spot price from Binance, Bybit, OKX, Coinbase in parallel; computes max spread, best buy/sell venue, cross-exchange arb detection (>0.1% threshold), volume distribution. 23 tests (2034 total)
 - **T-1202**: Market Anomaly Detector — scans watchlist for volume spikes >3x avg, price gaps >2 ATR, volatility expansion, liquidation cascades, correlation breaks vs BTC; ranked by severity score. 26 tests (2011 total)
 - **Pipeline v2**: Auto-dev pipeline with research phase, quality gates, git rollback
 - **T-1103**: Funding Rate Arbitrage Scanner. 29 tests (1942 total)

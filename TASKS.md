@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2011 passing
+> Tests: 2034 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -21,8 +21,8 @@
   - Create: `data/anomalyDetector.data.ts`, `tools/anomalyDetector.tool.ts`
   - Reuse: `derivatives.data.ts`, `crossAsset.tool.ts`, indicator engine (ATR, volume)
 
-- [ ] **T-1205**: Multi-Exchange Price Aggregator
-  - Status: PENDING
+- [x] **T-1205**: Multi-Exchange Price Aggregator
+  - Status: DONE
   - Spec: Tool `compare_exchanges` — fetch price/volume from Binance, Bybit (v5 public), OKX (v5 public), Coinbase (public) for a symbol. Compute: price spread between exchanges, volume distribution %, best bid/ask across venues, arbitrage opportunity if spread > fee threshold. Returns MetricCard (best buy/sell venue, max spread%) + TableBlock (per-exchange price/volume/spread) + TextBlock (arb analysis if spread > 0.1%).
   - Create: `data/multiExchange.data.ts`, `tools/multiExchange.tool.ts`
 
