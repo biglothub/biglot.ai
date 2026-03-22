@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2491 passing
+> Tests: 2535 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -112,8 +112,8 @@
 
 ## Phase 14: Trader Experience & Polish
 
-- [ ] **T-1401**: Unified Risk Dashboard
-  - Status: PENDING
+- [x] **T-1401**: Unified Risk Dashboard
+  - Status: DONE
   - Spec: Tool `get_risk_dashboard` — consolidate all risk tools into one view: portfolio drawdown, position-level risk, correlation risk, liquidation risk, concentration risk (largest position %), beta-adjusted exposure, VaR (Monte Carlo), stress test summary. Unified risk score 0-100. Returns GaugeBlock (risk score) + MetricCard (VaR, max drawdown, concentration, beta) + HeatmapBlock (risk contribution per asset) + TableBlock (per-position breakdown) + TextBlock (AI commentary).
   - Create: `data/riskDashboard.data.ts`, `tools/riskDashboard.tool.ts`
   - Reuse: all existing risk tools, portfolio tracker, Monte Carlo, stress test
