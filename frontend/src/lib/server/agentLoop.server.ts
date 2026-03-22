@@ -74,6 +74,7 @@ import './tools/gridBot.tool';
 import './tools/scheduledBriefing.tool';
 import './tools/tradeReasoning.tool';
 import './tools/tradeChecklist.tool';
+import './tools/narrativeExplainer.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

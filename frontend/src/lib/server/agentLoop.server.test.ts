@@ -69,6 +69,7 @@ vi.mock('./tools/gridBot.tool', () => ({}));
 vi.mock('./tools/scheduledBriefing.tool', () => ({}));
 vi.mock('./tools/tradeReasoning.tool', () => ({}));
 vi.mock('./tools/tradeChecklist.tool', () => ({}));
+vi.mock('./tools/narrativeExplainer.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
