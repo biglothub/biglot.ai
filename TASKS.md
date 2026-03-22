@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2382 passing
+> Tests: 2491 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -102,8 +102,8 @@
   - Create: `data/journalPatterns.data.ts`, `tools/journalPatterns.tool.ts`
   - Reuse: `journal.ts`
 
-- [ ] **T-1308**: Multi-AI War Room
-  - Status: PENDING
+- [x] **T-1308**: Multi-AI War Room
+  - Status: DONE
   - Spec: Tool `start_war_room` — 4 specialist AI panelists: Technical Analyst (charts/patterns), Macro Strategist (yields/COT/DXY), Quant (correlations/regime/statistics), Risk Manager (position sizing/drawdown/portfolio risk). Each gets tool data for their specialty. Risk Manager speaks last. Consensus recommendation with dissent noted. Returns enhanced DiscussionBlock (panelist specialties + data citations) + MetricCard (consensus direction, confidence, dissent count) + TradeSetupBlock (if consensus actionable).
   - Create: `data/warRoom.data.ts`, `tools/warRoom.tool.ts`
   - Reuse: `discussionLoop.server.ts`
