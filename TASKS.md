@@ -327,17 +327,22 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Monthly return aggregation, seasonal score, edge cases.
 
-- [ ] **T-705**: AI Portfolio Rebalancer
-  - Status: PENDING | Depends: T-302
+- [x] **T-705**: AI Portfolio Rebalancer
+  - Status: DONE | Depends: T-302
   - Spec: Tool `rebalance_portfolio` — given target allocations (%), compare to current portfolio weights (from portfolio tracker), compute required trades (buy/sell amounts). Risk-parity option using inverse-volatility weighting. Returns MetricCard (drift) + trades table.
   - Create: `frontend/src/lib/server/tools/rebalancer.tool.ts`, `frontend/src/lib/server/risk/rebalancer.ts`, `rebalancer.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Rebalancing math, risk-parity weights, edge cases (zero positions).
+  - Session notes (2026-03-22): rebalancer.ts: normaliseAllocations, riskParityWeights (inverse-vol, fallback 20%), computeRebalanceTrades (USD delta + drift%, ignores dust <$1, includes new targets not in portfolio), rebalance (fixed_weight/risk_parity). Tool: rebalance_portfolio — fetches positions via listPositions, prices via fetchBinanceOHLCV, returns MetricCard (value, max drift, method, trade count) + required trades table + effective targets table. 19 tests, 1345 total passing.
 
 ---
 
 ## Completed
 <!-- Tasks move here when done -->
+
+### Session 2026-03-22 (T-705)
+- Completed: T-705 AI Portfolio Rebalancer
+- rebalancer.ts: normaliseAllocations, riskParityWeights (inverse-vol, fallback 20%), computeRebalanceTrades (buy/sell by USD delta, sorted by drift, dust filter <$1), rebalance (fixed_weight/risk_parity entry). Tool: rebalance_portfolio — MetricCard + trades table + effective targets table. 19 tests, 1345 total.
 
 ### Session 2026-03-22 (T-701–T-704)
 - Completed: T-704 Seasonality Analysis Tool

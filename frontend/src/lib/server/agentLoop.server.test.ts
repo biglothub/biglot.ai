@@ -39,6 +39,7 @@ vi.mock('./tools/wyckoff.tool', () => ({}));
 vi.mock('./tools/elliottWave.tool', () => ({}));
 vi.mock('./tools/intermarket.tool', () => ({}));
 vi.mock('./tools/seasonality.tool', () => ({}));
+vi.mock('./tools/rebalancer.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
