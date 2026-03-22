@@ -406,13 +406,14 @@
   - Tests: Dominance calculation, sentiment classification, mock CoinGecko response.
   - Session notes (2026-03-22): dominance.data.ts: GlobalMarketData type, defaultGlobalFetcher (CoinGecko /global, extracts btc/eth dom from market_cap_percentage map), classifyMarketSentiment (risk_off>55% → alt_season>40% → eth_led>20%+btc<48% → btc_led), sentimentLabel/Description, buildDominanceSnapshot (injectable fetcher). get_market_dominance tool: MetricCard (6 metrics) + dominance table + regime table. 30 min cache. 21 tests, 1571 total passing.
 
-- [ ] **T-903**: Fibonacci Confluence Zone Scanner
-  - Status: PENDING | Depends: T-101
+- [x] **T-903**: Fibonacci Confluence Zone Scanner
+  - Status: DONE | Depends: T-101
   - Spec: Tool `scan_fibonacci_confluence` — given OHLCV, detect multiple swing highs/lows (findPivots), compute Fibonacci retracement (38.2%, 50%, 61.8%, 78.6%) and extension (127.2%, 161.8%) levels for each swing. Cluster levels within 0.5% of each other into confluence zones. Score zones by number of overlapping levels. Returns MetricCard (current price, nearest zone, zone count) + TableBlock (zone price, strength, Fib levels contributing, zone type support/resistance).
   - Create: `frontend/src/lib/server/indicators/fibConfluence.ts`, `fibConfluence.test.ts`
   - Create: `frontend/src/lib/server/tools/fibConfluence.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Single swing retracements, multi-swing confluence detection, clustering, zone classification.
+  - Session notes (2026-03-22): fibConfluence.ts: computeSwingFibLevels (5 retracements + 2 ext↑ + 2 ext↓ = 9 levels per swing), clusterFibLevels (greedy sort-then-merge within clusterPct%), buildConfluenceZone (centroid, priceMin/Max, zoneType support/resistance/pivot by distancePct), findFibConfluenceZones (pivot detection → extractSwings → compute all levels → cluster → filter minStrength≥2 → sort by strength), fmtFibPrice. Tool: scan_fibonacci_confluence — injectable maxSwings/lookback/clusterPct params, 15 min cache. 29 tests, 1621 total passing.
 
 - [ ] **T-904**: Monte Carlo Portfolio Simulation
   - Status: PENDING | Depends: T-302

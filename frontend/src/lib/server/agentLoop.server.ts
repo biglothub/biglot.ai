@@ -52,6 +52,7 @@ import './tools/candlePatterns.tool';
 import './tools/tvAlerts.tool';
 import './tools/screener.tool';
 import './tools/dominance.tool';
+import './tools/fibConfluence.tool';
 import './tools/watchlistScanner.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
