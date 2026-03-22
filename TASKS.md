@@ -305,8 +305,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Accumulation scenario (SC+Spring+SOS), Distribution scenario (BC+UTAD+SOW), Markup (uptrend), VSA signals, bias calculation.
 
-- [ ] **T-702**: Elliott Wave Counter
-  - Status: PENDING | Depends: T-101
+- [x] **T-702**: Elliott Wave Counter
+  - Status: DONE | Depends: T-101
   - Spec: Tool `count_elliott_waves` — detect 5-wave impulse (1-2-3-4-5) and 3-wave correction (A-B-C) using pivot-based algorithm. Validate wave rules (Wave 3 never shortest, Wave 4 no overlap with Wave 1). Fibonacci extension targets for Wave 3/5 and correction retracements. Returns MetricCard + wave targets table.
   - Create: `frontend/src/lib/server/indicators/elliottWave.ts`, `elliottWave.test.ts`
   - Create: `frontend/src/lib/server/tools/elliottWave.tool.ts`
@@ -338,6 +338,11 @@
 
 ## Completed
 <!-- Tasks move here when done -->
+
+### Session 2026-03-22 (T-701–T-702)
+- Completed: T-701 Wyckoff Analysis, T-702 Elliott Wave Counter
+- T-701: wyckoff.ts: detectPriorTrend, detectTradingRange (linear regression slope <0.4%/bar), detectWyckoffEvents (12 event types), detectVSASignals (5 signal types), classifyWyckoffPhase (sub-phase A-E), calcWyckoffBias (-100..+100). analyze_wyckoff tool. 45 tests.
+- T-702: elliottWave.ts: buildSwingSequence (deduplicates consecutive same-type pivots), tryImpulse/tryCorrection (5-wave/3-wave pattern matching), validateImpulseRules (Wave 2 retrace, Wave 3 shortest, Wave 4 overlap), validateCorrectiveRules, fibRetracementTargets, fibExtensionTargets. count_elliott_waves tool. 23 tests. Total: 1276 passing.
 
 ### Session 2026-03-22 (T-701)
 - Completed: T-701 Wyckoff Market Cycle Analysis
