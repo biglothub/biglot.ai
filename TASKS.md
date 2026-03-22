@@ -442,13 +442,13 @@
   - Tests: scanSymbol with known OHLCV, buildWatchlistScan aggregation, bull/bear counts, error handling.
   - Session notes (2026-03-22): watchlistScanner.data.ts: scanSymbol (price, 24h change, RSI14, aboveSMA50/200, analyzeRegime, detectConfluence → bullishScore/bearishScore/confluenceScore/dominantDirection), buildWatchlistScan (sort: errors last, then confluenceScore desc, then change24h; aggregates bullCount/bearCount/neutralCount/avgRSI). scan_watchlist tool: MetricCard (sentiment label, avgRSI, bull/bear counts) + TableBlock (symbol, price, 24h%, RSI, regime emoji, signal label, score, SMA position). 10 min cache. Note: pre-existing screener.tool.ts (screen_assets) with filter-based screening was also already implemented. 38 tests (watchlistScanner.data.test.ts), 1550 total passing.
 
-- [ ] **T-902**: Fibonacci Confluence Tool
-  - Status: PENDING | Depends: T-101
-  - Spec: Tool `get_fibonacci_confluence` — given OHLCV, auto-detect significant swing highs/lows (pivots). Compute Fibonacci retracement levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) and extension levels (127.2%, 161.8%, 261.8%) from multiple swings. Find price clusters where multiple Fib levels from different swings align within 0.5%. Returns MetricCard (strongest confluences) + TableBlock of all Fib levels sorted by price.
-  - Create: `frontend/src/lib/server/indicators/fibonacci.ts`, `fibonacci.test.ts`
-  - Create: `frontend/src/lib/server/tools/fibonacci.tool.ts`
+- [x] **T-902**: Crypto Market Dominance Tool
+  - Status: DONE
+  - Spec: Tool `get_market_dominance` — fetch global market stats from CoinGecko /global endpoint: total market cap, 24h volume, BTC dominance %, ETH dominance %, altcoin dominance %. Classify market sentiment: btc_led (BTC dom > 50% and rising), eth_led (ETH dom > 20%), alt_season (BTC dom < 40%), risk_off (BTC dom > 55%). Returns MetricCard + TableBlock.
+  - Create: `frontend/src/lib/server/data/dominance.data.ts`, `dominance.data.test.ts`
+  - Create: `frontend/src/lib/server/tools/dominance.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
-  - Tests: Retracement levels on known swing, extension levels, confluence detection.
+  - Session notes (2026-03-22): dominance.data.ts: GlobalMarketData, MarketSentiment (btc_led/eth_led/alt_season/risk_off), DominanceSnapshot, classifyDominanceSentiment, buildDominanceSnapshot (injectable GlobalFetcher). get_market_dominance tool: MetricCard (BTC/ETH/alt dominance, market cap, 24h vol, sentiment) + dominance breakdown table. 30 min cache. 21 tests, 1571 total passing.
 
 - [ ] **T-903**: Heatmap Block Renderer
   - Status: PENDING
@@ -470,6 +470,14 @@
   - Create: `frontend/src/lib/server/tools/attribution.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Attribution by DOW, by regime, by setup type.
+
+- [ ] **T-906**: Fibonacci Confluence Tool
+  - Status: PENDING | Depends: T-101
+  - Spec: Tool `get_fibonacci_confluence` — given OHLCV, auto-detect significant swing highs/lows (pivots, lookback 10). Compute Fibonacci retracement levels (23.6%, 38.2%, 50%, 61.8%, 78.6%) and extension levels (127.2%, 161.8%, 261.8%) from the most recent 3 major swings. Find price clusters where multiple Fib levels from different swings align within 0.5% of each other (confluence zones). Returns MetricCard (current price vs nearest Fib, strongest confluences) + TableBlock of all Fib levels sorted by price proximity, with zone confluences highlighted.
+  - Create: `frontend/src/lib/server/indicators/fibonacci.ts`, `fibonacci.test.ts`
+  - Create: `frontend/src/lib/server/tools/fibonacci.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Retracement levels on known high/low, extension levels, confluence detection (multiple overlapping zones).
 
 ---
 
