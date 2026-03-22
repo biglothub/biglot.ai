@@ -282,8 +282,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Known regime scenarios (strong ADX = trending, low ADX = ranging).
 
-- [ ] **T-605**: AI Daily Market Briefing
-  - Status: PENDING
+- [x] **T-605**: AI Daily Market Briefing
+  - Status: DONE
   - Spec: Tool `get_daily_briefing` + scheduled endpoint. Auto-generates morning summary: top crypto movers (24h), macro events today, active signals from scanner, portfolio PnL. Delivers via Telegram. Route: `/api/briefing` (GET to trigger manually, POST for cron).
   - Create: `frontend/src/lib/server/briefing/dailyBriefing.ts`, `dailyBriefing.test.ts`
   - Create: `frontend/src/lib/server/tools/dailyBriefing.tool.ts`
@@ -299,13 +299,13 @@
 ## Session Notes
 
 ### Session 2026-03-22 (T-601–T-604)
-- Completed: T-601 SMC Tool, T-602 News Sentiment Feed, T-603 Paper Trading Engine, T-604 Market Regime Detection
+- Completed: T-601 SMC Tool, T-602 News Sentiment Feed, T-603 Paper Trading Engine, T-604 Market Regime Detection, T-605 AI Daily Market Briefing
 - T-601: `analyze_smc` tool — Order Blocks, FVGs, BOS/CHOCH, Liquidity Zones, SMC bias score. 39 tests.
 - T-602: `get_news_sentiment` — RSS XML parsing (CoinDesk, CoinTelegraph, Reuters, Yahoo Finance), keyword NLP scoring, symbol filtering, GaugeBlock + headline table. 42 tests.
 - T-603: Paper trading engine — `paper_buy`, `paper_sell`, `paper_portfolio` tools. Supabase `paper_trades` table (long/short, is_open). Live prices via Binance. PaperPortfolio.svelte dashboard widget. 28 tests.
-- T-604: `detect_market_regime` — ADX + ATR% + RSI → trending_up/trending_down/ranging/high_volatility. GaugeBlock + MetricCard. 5 min cache. 29 tests. Total: 1187 tests.
-- Issues: Supabase mock chaining required module-level `mockFrom` (shared across calls); `vi.mocked(db.from)` pattern fails because `getSupabaseAdminClient()` creates a new fn each call.
-- Next: T-605 AI Daily Market Briefing
+- T-604: `detect_market_regime` — ADX + ATR% + RSI → trending_up/trending_down/ranging/high_volatility. GaugeBlock + MetricCard. 5 min cache. 29 tests.
+- T-605: `get_daily_briefing` + `/api/briefing` — Binance 24h USDT movers (min 5M volume, filters leveraged tokens), paper portfolio PnL, Telegram HTML format. POST cron protected by `BRIEFING_CRON_SECRET`. 21 tests. Total: 1208 tests.
+- Issues: Supabase mock chaining required module-level `mockFrom`; `fmtPnL` sign must precede `$` (sign before symbol).
 
 ### Session 2026-03-22 (T-203)
 - Completed: T-203 Multi-Source OHLCV Provider
