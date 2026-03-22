@@ -96,8 +96,8 @@
   - Create: `data/scenarioSimulator.data.ts`, `tools/scenarioSimulator.tool.ts`
   - Reuse: `stressTest.ts`, portfolio tracker
 
-- [ ] **T-1307**: Trading Journal Pattern Analyzer
-  - Status: PENDING
+- [x] **T-1307**: Trading Journal Pattern Analyzer
+  - Status: DONE
   - Spec: Tool `analyze_journal_patterns` — find behavioral/performance patterns in trade journal: best/worst setup types, time-of-day/day-of-week patterns, win rate by emotion, streak analysis, position sizing patterns, common mistakes. LLM coaching: "You win 73% on pullbacks but 31% on breakouts — consider dropping breakouts." Returns MetricCard (total trades, key insight) + TableBlock (patterns by setup/emotion/day) + TextBlock (AI coaching) + GaugeBlock (discipline score).
   - Create: `data/journalPatterns.data.ts`, `tools/journalPatterns.tool.ts`
   - Reuse: `journal.ts`

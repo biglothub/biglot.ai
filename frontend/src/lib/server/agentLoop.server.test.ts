@@ -73,9 +73,11 @@ vi.mock('./tools/narrativeExplainer.tool', () => ({}));
 vi.mock('./tools/strategyRecommender.tool', () => ({}));
 vi.mock('./tools/postTradeAnalyst.tool', () => ({}));
 vi.mock('./tools/scenarioSimulator.tool', () => ({}));
+vi.mock('./tools/journalPatterns.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
+	registerTool: vi.fn(),
 	getOpenAIToolSchemas: vi.fn(() => [
 		{
 			type: 'function',

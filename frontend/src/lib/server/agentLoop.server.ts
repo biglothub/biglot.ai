@@ -78,6 +78,7 @@ import './tools/narrativeExplainer.tool';
 import './tools/strategyRecommender.tool';
 import './tools/postTradeAnalyst.tool';
 import './tools/scenarioSimulator.tool';
+import './tools/journalPatterns.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
