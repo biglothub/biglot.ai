@@ -136,8 +136,8 @@
   - Create: `data/indicatorBuilder.data.ts`, `tools/indicatorBuilder.tool.ts`
   - Reuse: indicator engine (`engine.ts`, `confluence.ts`)
 
-- [ ] **T-1404**: Strategy Sharing & Community Library
-  - Status: PENDING
+- [x] **T-1404**: Strategy Sharing & Community Library
+  - Status: DONE
   - Spec: Tool `share_strategy` / `browse_strategies` — publish backtested strategies to community library. Validate backtest exists, capture metrics (Sharpe, win rate, max DD), tag by asset class + regime. Browse: sort by Sharpe/win rate/newest, filter by asset/type. Clone to own backtest. Returns MetricCard (total shared, top-rated) + TableBlock (strategy list with metrics) + BacktestBlock (viewing specific strategy).
   - Create: `data/strategySharing.data.ts`, `tools/strategySharing.tool.ts`
   - Reuse: backtest tool
