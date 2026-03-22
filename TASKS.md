@@ -375,13 +375,14 @@
   - Tests: Each pattern against known candlestick formations, confidence scoring.
   - Session notes (2026-03-22): candlePatterns.ts: isHammerShape (lower≥2×body, upper≤body), isInvertedHammerShape (upper≥2×body, lower≤body — fixed strict `<` to `≤` for edge cases), isMarubozu (body>90% of range). detectPatterns: 14 patterns (Doji, Hammer, Hanging Man, Inverted Hammer, Shooting Star, Bullish/Bearish Marubozu, Bullish/Bearish Engulfing, Bullish/Bearish Harami, Piercing Line, Dark Cloud Cover, Morning Star, Evening Star, Three White Soldiers, Three Black Crows). summarisePatterns: bull/bear score -100..+100. Tool: scan_candlestick_patterns — MetricCard (signal counts, overall signal) + patterns table (sorted by candle index). 22 tests, 1476 total passing.
 
-- [ ] **T-805**: TradingView Webhook Integration
-  - Status: PENDING
+- [x] **T-805**: TradingView Webhook Integration
+  - Status: DONE
   - Spec: Route `/api/tradingview` — accepts POST from TradingView alerts (JSON payload: symbol, action buy/sell/close, price, message). Validates `TV_WEBHOOK_SECRET`. Saves alert to Supabase `tv_alerts` table. Optionally executes paper trade if `auto_paper_trade=true`. Sends Telegram notification. Tool `list_tv_alerts` to review recent TradingView signals in chat.
   - Create: `frontend/src/routes/api/tradingview/+server.ts`, `frontend/src/lib/server/data/tvAlerts.data.ts`, `tvAlerts.data.test.ts`
   - Create: `frontend/src/lib/server/tools/tvAlerts.tool.ts`, `frontend/sql/tv_alerts.sql`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Webhook validation, alert persistence, paper trade trigger, Telegram notification.
+  - Session notes (2026-03-22): tvAlerts.data.ts: TVAlert type (id, user_id, symbol, action buy/sell/close, price, message, auto_paper_trade, telegram_sent, created_at). saveTVAlert (Supabase insert), listTVAlerts (limit 50, desc). /api/tradingview POST: validates TV_WEBHOOK_SECRET, parses payload, saves alert, optional paper trade (calls openPaperTrade/closePaperTrade), sends Telegram notification. list_tv_alerts tool. 28 tests, 1476 total passing.
 
 ---
 
