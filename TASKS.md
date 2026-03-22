@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2318 passing
+> Tests: 2382 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -84,8 +84,8 @@
   - Create: `data/strategyRecommender.data.ts`, `tools/strategyRecommender.tool.ts`
   - Reuse: regime detector, macro indicators, correlation data
 
-- [ ] **T-1303**: AI Post-Trade Analyst
-  - Status: PENDING
+- [x] **T-1303**: AI Post-Trade Analyst
+  - Status: DONE
   - Spec: Tool `analyze_trade` — deep post-mortem on completed trade. Fetch chart for trade period, replay signals at entry/exit timestamps, check if thesis held, compare actual vs optimal execution (hindsight), calculate slippage + timing cost. LLM generates coaching feedback. Returns ChartBlock (trade period with entry/exit markers) + MetricCard (R-multiple, timing efficiency, thesis accuracy) + TextBlock (AI coaching) + TableBlock (signal replay).
   - Create: `data/postTradeAnalyst.data.ts`, `tools/postTradeAnalyst.tool.ts`
   - Reuse: `journal.ts`, indicator engine, OHLCV provider
