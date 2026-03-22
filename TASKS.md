@@ -313,8 +313,8 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Known 5-wave formations, ABC corrections, rule validation, Fibonacci targets.
 
-- [ ] **T-703**: Intermarket Analysis Tool
-  - Status: PENDING
+- [x] **T-703**: Intermarket Analysis Tool
+  - Status: DONE
   - Spec: Tool `get_intermarket_analysis` — risk-on/risk-off signal from: SPY vs TLT (bonds), DXY vs commodities (GLD, USO), BTC vs NASDAQ correlation, VIX level. Rolling 20-day correlations + current divergence. Returns MetricCard (risk signal) + HeatmapBlock (correlations) + divergence table.
   - Create: `frontend/src/lib/server/tools/intermarket.tool.ts`, `frontend/src/lib/server/data/intermarket.data.ts`, `intermarket.data.test.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
@@ -338,6 +338,11 @@
 
 ## Completed
 <!-- Tasks move here when done -->
+
+### Session 2026-03-22 (T-701–T-703)
+- Completed: T-703 Intermarket Analysis Tool
+- intermarket.data.ts: pctChange, computeRiskScore (SPY/QQQ/TLT/GLD/USO/BTC-USD weighted signal), riskLabel, detectDivergences (SPY-TLT, BTC-QQQ, GLD-SPY with interpretation), buildIntermarketSnapshot (mockable fetcher, pearsonCorrelation reuse, correlation matrix). get_intermarket_analysis tool: MetricCard + HeatmapBlock (correlation) + divergence table + 20d performance table. 30 min cache. 29 tests, 1305 total passing.
+- Issues: HeatmapBlock uses `assets`/`timeframes`/`data`/`colorScale` not `labels`/`matrix`; test matrix needs explicit `number[][]` annotation to avoid literal inference.
 
 ### Session 2026-03-22 (T-701–T-702)
 - Completed: T-701 Wyckoff Analysis, T-702 Elliott Wave Counter
