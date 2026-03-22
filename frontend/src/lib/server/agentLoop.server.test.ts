@@ -33,6 +33,7 @@ vi.mock('./tools/strategyOptimizer.tool', () => ({}));
 vi.mock('./tools/smc.tool', () => ({}));
 vi.mock('./tools/newsSentiment.tool', () => ({}));
 vi.mock('./tools/paperTrading.tool', () => ({}));
+vi.mock('./tools/marketRegime.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({
