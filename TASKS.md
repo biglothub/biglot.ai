@@ -1,7 +1,7 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 2535 passing
+> Tests: 2612 passing
 > Changelog: CHANGELOG.md
 
 ---
@@ -124,8 +124,8 @@
   - Create: `data/pnlReport.data.ts`, `tools/pnlReport.tool.ts`
   - Reuse: `journal.ts`, `paperTrader.ts`
 
-- [ ] **T-1403**: Interactive Trading Quiz
-  - Status: PENDING
+- [x] **T-1403**: Interactive Trading Quiz
+  - Status: DONE
   - Spec: Tool `start_quiz` — categories: Technical Analysis (identify patterns on real charts), Risk Management (position sizing scenarios), Market Microstructure (order flow), Trading Psychology (scenario decisions), Macro (interpret economic data). Real historical data for questions. LLM generates + evaluates dynamically. Adaptive difficulty. Score tracking via memory. Returns TextBlock (question) + ChartBlock (chart questions) + MetricCard (score, streak, strengths) + TextBlock (explanation after answer).
   - Create: `data/tradingQuiz.data.ts`, `tools/tradingQuiz.tool.ts`
   - Reuse: OHLCV provider, indicator engine, memory tool
