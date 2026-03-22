@@ -1,6 +1,14 @@
 <script lang="ts">
     import type { BreadthSnapshot } from '$lib/server/data/breadth.data';
-    import { heatmapColor } from '$lib/server/data/breadth.data';
+
+    function heatmapColor(pct: number): string {
+        if (pct > 5) return '#16a34a';
+        if (pct > 2) return '#4ade80';
+        if (pct > 0) return '#86efac';
+        if (pct > -2) return '#fca5a5';
+        if (pct > -5) return '#f87171';
+        return '#dc2626';
+    }
 
     const { data }: { data: BreadthSnapshot | null } = $props();
 
