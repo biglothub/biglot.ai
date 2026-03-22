@@ -1,15 +1,15 @@
 # TASKS.md - BigLot.ai Active Tasks
 > Goal: Claude for Traders — the world's best AI trading assistant
 > Completed: 57 tasks across 11 phases (see .claude/archive/COMPLETED.md)
-> Tests: 1942 passing
+> Tests: 1985 passing
 > Changelog: CHANGELOG.md
 
 ---
 
 ## Phase 12: Real-Time Intelligence & Automation
 
-- [ ] **T-1201**: Smart Alert Engine + Telegram Push
-  - Status: PENDING
+- [x] **T-1201**: Smart Alert Engine + Telegram Push
+  - Status: DONE
   - Spec: Tool `manage_smart_alerts` — compound alert conditions (price AND RSI threshold, price AND volume spike >3x, multi-asset correlation break). Polling loop checks every 60s. Push triggered alerts via existing Telegram integration. Store alert config + history in Supabase. Returns MetricCard (active alerts, triggered today) + TableBlock (alert list with status/condition/last triggered).
   - Create: `data/smartAlerts.data.ts`, `tools/smartAlerts.tool.ts`
   - Modify: none

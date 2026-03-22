@@ -3,6 +3,7 @@
 ## 2026-03-22
 - **Pipeline v2**: Auto-dev pipeline with research phase, quality gates, git rollback
 - **T-1103**: Funding Rate Arbitrage Scanner. 29 tests (1942 total)
+- **T-1201**: Smart Alert Engine + Telegram Push — compound alert conditions (price+RSI, price+volume spike, correlation break), check_now evaluates via live OHLCV+RSI+Pearson correlation, pushes Telegram. 43 tests (1985 total)
 - **T-1102**: Historical Scenario / Stress Test Tool. 34 tests (1913 total)
 - **T-1101**: Efficient Frontier & Portfolio Optimization
 
