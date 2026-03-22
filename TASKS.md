@@ -450,11 +450,12 @@
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Session notes (2026-03-22): dominance.data.ts: GlobalMarketData, MarketSentiment (btc_led/eth_led/alt_season/risk_off), DominanceSnapshot, classifyDominanceSentiment, buildDominanceSnapshot (injectable GlobalFetcher). get_market_dominance tool: MetricCard (BTC/ETH/alt dominance, market cap, 24h vol, sentiment) + dominance breakdown table. 30 min cache. 21 tests, 1571 total passing.
 
-- [ ] **T-903**: Heatmap Block Renderer
-  - Status: PENDING
+- [x] **T-903**: Heatmap Block Renderer
+  - Status: DONE
   - Spec: Render HeatmapBlock in the UI (currently placeholder). Color scale from red (negative) to green (positive). Hover tooltip with exact value. Used by correlation matrix, intermarket, seasonality, MTF tools. Responsive grid layout.
   - Modify: `frontend/src/lib/components/blocks/HeatmapBlock.svelte`
   - Tests: Render snapshot with mock heatmap data, color scale edge cases.
+  - Session notes (2026-03-22): HeatmapBlock.svelte was already fully implemented (pre-existing). Component: table grid with redgreen/goldblue color scales, alpha-scaled cell backgrounds (norm = value/maxAbs), hover brightness, overflow-x: auto for wide tables. Tests cover type shape, calcMaxAbs, cellBg color logic (redgreen/goldblue), clamping, data variants. 21 tests, 1592 total passing.
 
 - [ ] **T-904**: LLM-Powered Market Summary
   - Status: PENDING
