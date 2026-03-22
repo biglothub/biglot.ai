@@ -35,6 +35,7 @@ vi.mock('./tools/newsSentiment.tool', () => ({}));
 vi.mock('./tools/paperTrading.tool', () => ({}));
 vi.mock('./tools/marketRegime.tool', () => ({}));
 vi.mock('./tools/dailyBriefing.tool', () => ({}));
+vi.mock('./tools/wyckoff.tool', () => ({}));
 
 // Mock the tool registry functions
 vi.mock('./tools/registry', () => ({

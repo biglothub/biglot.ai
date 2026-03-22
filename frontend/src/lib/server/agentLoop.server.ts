@@ -40,6 +40,7 @@ import './tools/newsSentiment.tool';
 import './tools/paperTrading.tool';
 import './tools/marketRegime.tool';
 import './tools/dailyBriefing.tool';
+import './tools/wyckoff.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 

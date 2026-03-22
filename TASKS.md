@@ -281,6 +281,7 @@
   - Create: `frontend/src/lib/server/tools/marketRegime.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Known regime scenarios (strong ADX = trending, low ADX = ranging).
+  - Session notes (2026-03-22): regime.ts: calcADX, calcATRRatio, classifyRegime (trending_up/down/ranging/high_volatility — ADX>25+trend, ATR%>3, fallback). detect_market_regime tool: GaugeBlock (regime score 0-100) + MetricCard per indicator (ADX, ATR%, RSI, structure). 5 min cache. 29 tests, 1187 total passing.
 
 - [x] **T-605**: AI Daily Market Briefing
   - Status: DONE
@@ -290,11 +291,58 @@
   - Create: `frontend/src/routes/api/briefing/+server.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Briefing assembly, Telegram formatting, mock market data.
+  - Session notes (2026-03-22): dailyBriefing.ts: fetchTopMovers (Binance 24h USDT tickers, min 5M vol, filters leveraged tokens XBT/UP/DOWN/BEAR/BULL), assembleBriefing (movers + paper portfolio PnL). Telegram HTML format. get_daily_briefing tool. /api/briefing GET (manual) + POST (cron, BRIEFING_CRON_SECRET). 21 tests, 1208 total passing.
+
+---
+
+## Phase 7: Professional Trading Features
+
+- [x] **T-701**: Wyckoff Market Cycle Analysis
+  - Status: DONE
+  - Spec: Tool `analyze_wyckoff` — detect Wyckoff market phases (Accumulation A–E, Distribution A–E, Markup, Markdown). Identify key events: PS, SC, AR, ST, Spring/Test, SOS, LPS, BU (accumulation); PSY, BC, AR, ST, UTAD, SOW, LPSY (distribution). Volume Spread Analysis (effort vs result). Bias score -100 to +100. Returns GaugeBlock (bias) + MetricCard + events TableBlock.
+  - Create: `frontend/src/lib/server/indicators/wyckoff.ts`, `wyckoff.test.ts`
+  - Create: `frontend/src/lib/server/tools/wyckoff.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Accumulation scenario (SC+Spring+SOS), Distribution scenario (BC+UTAD+SOW), Markup (uptrend), VSA signals, bias calculation.
+
+- [ ] **T-702**: Elliott Wave Counter
+  - Status: PENDING | Depends: T-101
+  - Spec: Tool `count_elliott_waves` — detect 5-wave impulse (1-2-3-4-5) and 3-wave correction (A-B-C) using pivot-based algorithm. Validate wave rules (Wave 3 never shortest, Wave 4 no overlap with Wave 1). Fibonacci extension targets for Wave 3/5 and correction retracements. Returns MetricCard + wave targets table.
+  - Create: `frontend/src/lib/server/indicators/elliottWave.ts`, `elliottWave.test.ts`
+  - Create: `frontend/src/lib/server/tools/elliottWave.tool.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Known 5-wave formations, ABC corrections, rule validation, Fibonacci targets.
+
+- [ ] **T-703**: Intermarket Analysis Tool
+  - Status: PENDING
+  - Spec: Tool `get_intermarket_analysis` — risk-on/risk-off signal from: SPY vs TLT (bonds), DXY vs commodities (GLD, USO), BTC vs NASDAQ correlation, VIX level. Rolling 20-day correlations + current divergence. Returns MetricCard (risk signal) + HeatmapBlock (correlations) + divergence table.
+  - Create: `frontend/src/lib/server/tools/intermarket.tool.ts`, `frontend/src/lib/server/data/intermarket.data.ts`, `intermarket.data.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Mock Yahoo Finance prices, correlation calc, risk signal classification.
+
+- [ ] **T-704**: Seasonality Analysis Tool
+  - Status: PENDING
+  - Spec: Tool `get_seasonality` — monthly return averages for BTC/ETH/SPY/GOLD over 5+ years from Yahoo Finance historical data. Detect strongest/weakest months, day-of-week effect. Returns HeatmapBlock (monthly heatmap) + MetricCard (best/worst months).
+  - Create: `frontend/src/lib/server/tools/seasonality.tool.ts`, `frontend/src/lib/server/data/seasonality.data.ts`, `seasonality.data.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Monthly return aggregation, seasonal score, edge cases.
+
+- [ ] **T-705**: AI Portfolio Rebalancer
+  - Status: PENDING | Depends: T-302
+  - Spec: Tool `rebalance_portfolio` — given target allocations (%), compare to current portfolio weights (from portfolio tracker), compute required trades (buy/sell amounts). Risk-parity option using inverse-volatility weighting. Returns MetricCard (drift) + trades table.
+  - Create: `frontend/src/lib/server/tools/rebalancer.tool.ts`, `frontend/src/lib/server/risk/rebalancer.ts`, `rebalancer.test.ts`
+  - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
+  - Tests: Rebalancing math, risk-parity weights, edge cases (zero positions).
 
 ---
 
 ## Completed
 <!-- Tasks move here when done -->
+
+### Session 2026-03-22 (T-701)
+- Completed: T-701 Wyckoff Market Cycle Analysis
+- wyckoff.ts: `detectPriorTrend` (first/last third slope), `detectTradingRange` (linear regression slope check — rejects if >0.4%/bar), `detectWyckoffEvents` (SC, BC, AR, ST, Spring, SOS, SOW, UTAD, PS, PSY, LPS, LPSY — each emitted at most once), `detectVSASignals` (climax_volume, effort_no_result, no_demand, no_supply, stopping_volume), `classifyWyckoffPhase` (accumulation/distribution/markup/markdown + sub-phase A–E), `calcWyckoffBias` (-100..+100). Tool: `analyze_wyckoff` — GaugeBlock + MetricCard + events table + VSA table. 10 min cache. 45 tests, 1253 total passing.
+- Issues: OHLCV type uses `time` not `timestamp`; range detection uses linear regression slope instead of coverage-based check (more robust for oscillating ranges).
 
 ## Session Notes
 
