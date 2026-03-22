@@ -53,6 +53,14 @@ export type PatternAnnotation = {
 	confidence: number;   // 0–1
 };
 
+export type ChartMarker = {
+	time: number;    // unix seconds
+	price: number;
+	label: string;
+	color?: string;
+	shape?: 'arrow_up' | 'arrow_down' | 'circle';
+};
+
 export type ChartBlock = {
 	type: 'chart';
 	chartType: 'candlestick' | 'line' | 'bar';
@@ -66,6 +74,7 @@ export type ChartBlock = {
 		overlay: boolean; // true = on price chart, false = separate panel
 	}[];
 	patterns?: PatternAnnotation[];
+	markers?: ChartMarker[];
 };
 
 export type TableBlock = {
