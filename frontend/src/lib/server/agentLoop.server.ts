@@ -35,6 +35,7 @@ import './tools/patternScan.tool';
 import './tools/multiTimeframe.tool';
 import './tools/orderFlow.tool';
 import './tools/strategyOptimizer.tool';
+import './tools/smc.tool';
 import { getSystemPrompt, normalizeAgentMode, type AgentMode } from '$lib/agent/systemPrompts';
 import { StreamingThinkFilter } from '$lib/server/aiProvider.server';
 
