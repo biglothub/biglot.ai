@@ -14,6 +14,7 @@
     import SourcesBlock from "./SourcesBlock.svelte";
     import DiscussionBlock from "./DiscussionBlock.svelte";
     import ResearchReportBlock from "./ResearchReportBlock.svelte";
+    import ReasoningBlock from "./ReasoningBlock.svelte";
 
     let { block }: { block: ContentBlock } = $props();
 </script>
@@ -59,6 +60,8 @@
     <DiscussionBlock discussion={block} />
 {:else if block.type === "research_report"}
     <ResearchReportBlock report={block} />
+{:else if block.type === "reasoning"}
+    <ReasoningBlock {...block} />
 {:else if block.type === "backtest"}
     {#await import("./BacktestBlock.svelte") then module}
         {@const BacktestBlock = module.default}

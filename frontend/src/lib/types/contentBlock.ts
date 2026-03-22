@@ -240,6 +240,27 @@ export type SourcesBlock = {
 	}[];
 };
 
+// --- Reasoning Block (T-1301) - Trade Reasoning Engine ---
+
+export type ReasoningEvidenceItem = {
+	category: string;         // e.g. "Regime", "Technicals", "Sentiment", "Macro", "On-Chain"
+	tag: 'bullish' | 'bearish' | 'neutral';
+	point: string;            // concise evidence description
+	weight: number;           // 1-3 importance
+};
+
+export type ReasoningBlock = {
+	type: 'reasoning';
+	symbol: string;
+	direction: 'long' | 'short' | 'neutral';
+	confidence: number;       // 1-10
+	verdict: string;          // final AI verdict (markdown)
+	evidenceFor: ReasoningEvidenceItem[];
+	evidenceAgainst: ReasoningEvidenceItem[];
+	keyUnknowns: string[];
+	reasoning: string;        // full chain-of-thought markdown (expandable)
+};
+
 // --- Backtest Block (T-105) ---
 
 export type BacktestTrade = {
@@ -307,7 +328,8 @@ export type ContentBlock =
 	| SourcesBlock
 	| DiscussionBlock
 	| ResearchReportBlock
-	| BacktestBlock;
+	| BacktestBlock
+	| ReasoningBlock;
 
 export type ContentBlockType = ContentBlock['type'];
 

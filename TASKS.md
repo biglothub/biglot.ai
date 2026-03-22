@@ -60,8 +60,8 @@
 
 ## Phase 13: AI Trading Brain
 
-- [ ] **T-1301**: Trade Reasoning Engine ("Trading-R1")
-  - Status: PENDING
+- [x] **T-1301**: Trade Reasoning Engine ("Trading-R1")
+  - Status: DONE
   - Spec: Tool `reason_trade` — flagship AI feature. Given symbol + direction, orchestrate existing tools internally (regime, confluence, patterns, sentiment, macro, on-chain, intermarket) and produce structured reasoning trace. Shows: evidence FOR, evidence AGAINST, key unknowns, confidence 1-10, final verdict. New content block `ReasoningBlock` (expandable chain-of-thought with bullish/bearish/neutral evidence tags). Returns ReasoningBlock + MetricCard (conviction, evidence balance) + TradeSetupBlock (if conviction > 6).
   - Create: `data/tradeReasoning.data.ts`, `tools/tradeReasoning.tool.ts`, `types/contentBlock.ts` (add ReasoningBlock), `components/blocks/ReasoningBlock.svelte`
   - Reuse: analyzeRegime, detectConfluence, scanDivergences, get_news_sentiment, get_macro_indicators, get_onchain_data
