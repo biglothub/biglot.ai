@@ -348,13 +348,14 @@
   - Tests: Known volume distributions, POC/VAH/VAL calculations, edge cases (empty, single candle).
   - Session notes (2026-03-22): volumeProfile.ts: buildVolumeProfile (uniform volume distribution across overlapping bins, POC = highest volume bin, VAH/VAL via greedy expansion from POC until 70% volume covered), detectVPOCShift (first/second half comparison, 0.1% threshold), fmtPrice. Tool: get_volume_profile — MetricCard (POC, VAH, VAL, value area width%, price position, VPOC shift) + top-15 volume nodes table + full distribution table. Fixed fetchOHLCV result handling (FetchOHLCVResult not array). 23 tests, 1368+ total passing.
 
-- [ ] **T-802**: Options Analytics Tool
-  - Status: PENDING
+- [x] **T-802**: Options Analytics Tool
+  - Status: DONE
   - Spec: Tool `get_options_analytics` — Black-Scholes option pricing model. Inputs: underlying price, strike, expiry (days), risk-free rate, historical volatility (computed from OHLCV). Outputs: call/put prices, Greeks (Delta, Gamma, Theta, Vega, Rho), IV rank (current HV vs 1-year range). Returns MetricCard (price, IV, IV rank) + Greeks TableBlock.
   - Create: `frontend/src/lib/server/indicators/blackScholes.ts`, `blackScholes.test.ts`
   - Create: `frontend/src/lib/server/tools/optionsAnalytics.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Black-Scholes against known reference values, Greeks verification, IV rank calc.
+  - Session notes (2026-03-22): blackScholes.ts: normalCDF (A&S approximation via erf — fixed x/sqrt(2) normalisation bug), normalPDF, calcHistoricalVolatility (log-return std dev, annualised ×252), blackScholes (d1/d2, call/put prices, full Greeks: delta/gamma/theta/vega/rho), calcIVRank (rolling 21-day HV windows, ivRank 0-100, ivPercentile). Tool: get_options_analytics — fetches 365d OHLCV, computes HV, ATM/ITM/OTM classification, MetricCard + Greeks table + P&L scenario table (±5/10/20% moves). 34 tests, 1402 total passing.
 
 - [ ] **T-803**: Yield Curve & Macro Regime Tool
   - Status: PENDING
