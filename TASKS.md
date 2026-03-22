@@ -357,13 +357,14 @@
   - Tests: Black-Scholes against known reference values, Greeks verification, IV rank calc.
   - Session notes (2026-03-22): blackScholes.ts: normalCDF (A&S approximation via erf — fixed x/sqrt(2) normalisation bug), normalPDF, calcHistoricalVolatility (log-return std dev, annualised ×252), blackScholes (d1/d2, call/put prices, full Greeks: delta/gamma/theta/vega/rho), calcIVRank (rolling 21-day HV windows, ivRank 0-100, ivPercentile). Tool: get_options_analytics — fetches 365d OHLCV, computes HV, ATM/ITM/OTM classification, MetricCard + Greeks table + P&L scenario table (±5/10/20% moves). 34 tests, 1402 total passing.
 
-- [ ] **T-803**: Yield Curve & Macro Regime Tool
-  - Status: PENDING
+- [x] **T-803**: Yield Curve & Macro Regime Tool
+  - Status: DONE
   - Spec: Tool `get_yield_curve` — fetch US Treasury yields (3m, 2y, 5y, 10y, 30y) from Yahoo Finance (^IRX, ^UST2Y, ^FVX, ^TNX, ^TYX). Compute key spreads: 2s10s, 3m10y. Classify curve: normal/flat/inverted. Historical yield data for spread trend (20-day). Returns MetricCard (spreads, classification) + yield curve TableBlock.
   - Create: `frontend/src/lib/server/data/yieldCurve.data.ts`, `yieldCurve.data.test.ts`
   - Create: `frontend/src/lib/server/tools/yieldCurve.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Spread calculations, curve classification (inverted when 2s10s < 0), mock Yahoo Finance.
+  - Session notes (2026-03-22): yieldCurve.data.ts: YieldFetcher pattern (mockable), defaultYieldFetcher (Yahoo Finance v8 API, 5d range, last 2 closes), classifyCurve (inverted → 3m>10y or 2y>10y, flat → <25bps spread, normal otherwise), buildYieldCurveSnapshot (parallel Promise.allSettled, 3 spreads: 2s10s/3m10y/5s30s with signal labels). get_yield_curve tool: MetricCard (classification, key spreads, individual yields) + spreads TableBlock + yields TableBlock. 1h cache. 24 tests, 1426 total passing.
 
 - [ ] **T-804**: Candlestick Pattern Scanner
   - Status: PENDING
