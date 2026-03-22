@@ -264,14 +264,15 @@
   - Tests: RSS parsing, sentiment scoring, symbol filtering.
   - Session notes (2026-03-22): newsFeed.data.ts: 4 RSS sources (CoinDesk, CoinTelegraph, Reuters, Yahoo Finance). parseRSSXml (regex-based, CDATA support, HTML strip). scoreText (+1/-1 keyword matching, normalized to -1..+1). getSymbolAliases (BTCUSDT→bitcoin/btc etc., 14 symbol mappings). filterBySymbol. computeNewsSentiment (avg sentimentScore→0-100). fetchNewsFeed (Promise.allSettled, sort by pubDate, maxItems). get_news_sentiment tool: GaugeBlock + MetricCard breakdown + headlines TableBlock. 10 min cache. 42 tests, 1130 total passing.
 
-- [ ] **T-603**: Paper Trading Engine
-  - Status: PENDING
+- [x] **T-603**: Paper Trading Engine
+  - Status: DONE
   - Spec: Virtual live-trading sandbox. Tools: `paper_buy`, `paper_sell`, `paper_portfolio`. Supabase `paper_trades` table with symbol, side, qty, entry_price, exit_price, pnl. Real-time prices from marketData tool. Dashboard widget.
   - Create: `frontend/src/lib/server/paperTrading/paperTrader.ts`, `paperTrader.test.ts`
   - Create: `frontend/src/lib/server/tools/paperTrading.tool.ts`
   - Create: `frontend/sql/paper_trades.sql`, `frontend/src/lib/components/dashboard/PaperPortfolio.svelte`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`
   - Tests: Buy/sell execution, PnL calculation, portfolio snapshot.
+  - Session notes (2026-03-22): paper_trades table (uuid pk, user_id, symbol, side long/short, qty, entry_price, exit_price, pnl, is_open bool). paperTrader.ts: calcUnrealisedPnL/Pct (pure), buildPaperPortfolio (priceMap→PaperTradeWithPnL), openPaperTrade, closePaperTrade (fetch+update), listOpenTrades, listClosedTrades, getOpenTradeBySymbol. Tools: paper_buy (long at market), paper_sell (close existing long → else open short), paper_portfolio (MetricCard + open positions table + closed trades table). PaperPortfolio.svelte dashboard widget. Fixed Supabase mock singleton pattern (mockFrom) and as-never casts for TS strict mode. 28 tests, 1158 total passing.
 
 - [ ] **T-604**: Market Regime Detection
   - Status: PENDING
