@@ -366,13 +366,14 @@
   - Tests: Spread calculations, curve classification (inverted when 2s10s < 0), mock Yahoo Finance.
   - Session notes (2026-03-22): yieldCurve.data.ts: YieldFetcher pattern (mockable), defaultYieldFetcher (Yahoo Finance v8 API, 5d range, last 2 closes), classifyCurve (inverted → 3m>10y or 2y>10y, flat → <25bps spread, normal otherwise), buildYieldCurveSnapshot (parallel Promise.allSettled, 3 spreads: 2s10s/3m10y/5s30s with signal labels). get_yield_curve tool: MetricCard (classification, key spreads, individual yields) + spreads TableBlock + yields TableBlock. 1h cache. 24 tests, 1426 total passing.
 
-- [ ] **T-804**: Candlestick Pattern Scanner
-  - Status: PENDING
+- [x] **T-804**: Candlestick Pattern Scanner
+  - Status: DONE
   - Spec: Tool `scan_candlestick_patterns` — detect classic Japanese candlestick patterns on recent OHLCV: Doji, Hammer, Inverted Hammer, Shooting Star, Hanging Man, Bullish/Bearish Engulfing, Bullish/Bearish Harami, Morning Star, Evening Star, Three White Soldiers, Three Black Crows, Marubozu. Returns bullish/bearish classification, confidence, and candle index. TableBlock of detected patterns + MetricCard (bull vs bear signal count).
   - Create: `frontend/src/lib/server/indicators/candlePatterns.ts`, `candlePatterns.test.ts`
   - Create: `frontend/src/lib/server/tools/candlePatterns.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: Each pattern against known candlestick formations, confidence scoring.
+  - Session notes (2026-03-22): candlePatterns.ts: isHammerShape (lower≥2×body, upper≤body), isInvertedHammerShape (upper≥2×body, lower≤body — fixed strict `<` to `≤` for edge cases), isMarubozu (body>90% of range). detectPatterns: 14 patterns (Doji, Hammer, Hanging Man, Inverted Hammer, Shooting Star, Bullish/Bearish Marubozu, Bullish/Bearish Engulfing, Bullish/Bearish Harami, Piercing Line, Dark Cloud Cover, Morning Star, Evening Star, Three White Soldiers, Three Black Crows). summarisePatterns: bull/bear score -100..+100. Tool: scan_candlestick_patterns — MetricCard (signal counts, overall signal) + patterns table (sorted by candle index). 22 tests, 1476 total passing.
 
 - [ ] **T-805**: TradingView Webhook Integration
   - Status: PENDING
