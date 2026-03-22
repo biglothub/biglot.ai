@@ -240,6 +240,30 @@ export type SourcesBlock = {
 	}[];
 };
 
+// --- Checklist Block (T-1302) - Pre-Trade Checklist Enforcer ---
+
+export type ChecklistItemStatus = 'pass' | 'fail' | 'warning' | 'skip';
+
+export type ChecklistItem = {
+	id: string;
+	number: number;
+	question: string;
+	status: ChecklistItemStatus;
+	explanation: string;
+};
+
+export type ChecklistBlock = {
+	type: 'checklist';
+	symbol: string;
+	direction: 'long' | 'short' | 'neutral';
+	items: ChecklistItem[];
+	passCount: number;
+	failCount: number;
+	warningCount: number;
+	readinessScore: number;       // 0–100
+	recommendation: 'PROCEED' | 'CAUTION' | 'ABORT';
+};
+
 // --- Reasoning Block (T-1301) - Trade Reasoning Engine ---
 
 export type ReasoningEvidenceItem = {
@@ -329,7 +353,8 @@ export type ContentBlock =
 	| DiscussionBlock
 	| ResearchReportBlock
 	| BacktestBlock
-	| ReasoningBlock;
+	| ReasoningBlock
+	| ChecklistBlock;
 
 export type ContentBlockType = ContentBlock['type'];
 

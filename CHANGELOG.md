@@ -1,6 +1,9 @@
 # CHANGELOG - BigLot.ai
 
 ## 2026-03-22
+- **T-1302**: Pre-Trade Checklist Enforcer — `check_trade` tool runs 8-point pre-trade checklist (clear edge, regime aligned, R:R ≥ 2:1, position size, conflicting signals, event risk, in trading plan, not revenge trading); each item returns pass/fail/warning/skip with explanation; regime + confluence + divergence from OHLCV; high-impact event scan via Forex Factory; plan adherence + emotional state from trade journal; new `ChecklistBlock` content type with score arc + recommendation badge; `GaugeBlock` for readiness score 0–100. 24 tests (2283 total)
+
+## 2026-03-22
 - **T-1301**: Trade Reasoning Engine ("Trading-R1") — `reason_trade` tool orchestrates regime, confluence, divergence, sentiment, macro, and on-chain data; LLM (GPT-4o with Claude/DeepSeek fallback) synthesizes structured chain-of-thought with evidence FOR/AGAINST, key unknowns, confidence 1-10, verdict; new `ReasoningBlock` content type with expandable UI; `TradeSetupBlock` appended when conviction > 6. 24 tests (2259 total)
 
 ## 2026-03-22

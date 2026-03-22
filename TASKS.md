@@ -66,8 +66,8 @@
   - Create: `data/tradeReasoning.data.ts`, `tools/tradeReasoning.tool.ts`, `types/contentBlock.ts` (add ReasoningBlock), `components/blocks/ReasoningBlock.svelte`
   - Reuse: analyzeRegime, detectConfluence, scanDivergences, get_news_sentiment, get_macro_indicators, get_onchain_data
 
-- [ ] **T-1302**: Pre-Trade Checklist Enforcer
-  - Status: PENDING | Depends: T-1301
+- [x] **T-1302**: Pre-Trade Checklist Enforcer
+  - Status: DONE
   - Spec: Tool `check_trade` — 8-point checklist before any trade: (1) Clear edge? (2) Regime aligned? (3) R:R > 2:1? (4) Position size within limits? (5) Conflicting signals? (6) Event risk nearby? (7) In trading plan? (8) Revenge trading / tilted? Each returns pass/fail/warning + explanation. Custom checklist from user memory. New content block `ChecklistBlock`. Returns ChecklistBlock + MetricCard (pass rate) + GaugeBlock (trade readiness score).
   - Create: `data/tradeChecklist.data.ts`, `tools/tradeChecklist.tool.ts`, `types/contentBlock.ts` (add ChecklistBlock), `components/blocks/ChecklistBlock.svelte`
   - Reuse: regime, confluence, position sizing, economic calendar, trade journal
