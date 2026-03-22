@@ -432,13 +432,14 @@
 
 ## Phase 9: Intelligence & Automation
 
-- [ ] **T-901**: Watchlist Scanner Dashboard
-  - Status: PENDING
+- [x] **T-901**: Watchlist Scanner Dashboard
+  - Status: DONE
   - Spec: Tool `scan_watchlist` — scan a list of symbols (default: BTC, ETH, SOL, BNB, SPY, QQQ, GLD) in parallel. Per symbol: current price, 24h change %, RSI(14), regime (via analyzeRegime), dominant signal direction + confluence score, SMA50/200 position. Returns MetricCard (bull/bear count, avg RSI, market sentiment) + full scan TableBlock sorted by confluence score descending.
   - Create: `frontend/src/lib/server/data/watchlistScanner.data.ts`, `watchlistScanner.data.test.ts`
   - Create: `frontend/src/lib/server/tools/watchlistScanner.tool.ts`
   - Modify: `frontend/src/lib/server/agentLoop.server.ts`, `agentLoop.server.test.ts`
   - Tests: scanSymbol with known OHLCV, buildWatchlistScan aggregation, bull/bear counts, error handling.
+  - Session notes (2026-03-22): watchlistScanner.data.ts: scanSymbol (price, 24h change, RSI14, aboveSMA50/200, analyzeRegime, detectConfluence → bullishScore/bearishScore/confluenceScore/dominantDirection), buildWatchlistScan (sort: errors last, then confluenceScore desc, then change24h; aggregates bullCount/bearCount/neutralCount/avgRSI). scan_watchlist tool: MetricCard (sentiment label, avgRSI, bull/bear counts) + TableBlock (symbol, price, 24h%, RSI, regime emoji, signal label, score, SMA position). 10 min cache. Note: pre-existing screener.tool.ts (screen_assets) with filter-based screening was also already implemented. 38 tests (watchlistScanner.data.test.ts), 1550 total passing.
 
 - [ ] **T-902**: Fibonacci Confluence Tool
   - Status: PENDING | Depends: T-101
