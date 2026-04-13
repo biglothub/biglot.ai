@@ -63,6 +63,12 @@ BigLot.ai is a modern, trader-focused AI chat application designed to analyze ma
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    TAVILY_API_KEY=your_tavily_key
    DEEP_RESEARCH_MAX_ITERATIONS=8
+   DIFY_BASE_URL=http://localhost:5001/v1
+   DIFY_AGENT_ENABLED=0
+   DIFY_AGENT_API_KEY=your_dify_agent_app_key
+   DIFY_RESEARCH_ENABLED=0
+   DIFY_RESEARCH_API_KEY=your_dify_research_app_key
+   DIFY_TIMEOUT_MS=60000
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
    TELEGRAM_BOT_USERNAME=your_bot_username
    TELEGRAM_WEBHOOK_SECRET=strong_random_secret
@@ -91,6 +97,33 @@ BigLot.ai is a modern, trader-focused AI chat application designed to analyze ma
    ```bash
    npm run dev
    ```
+
+## Dify PoC Setup
+
+To route `agent` and `research` mode through a local Dify PoC without changing BigLot's UI or Supabase persistence:
+
+1. Start Dify from the provided checkout:
+   ```bash
+   cd /Users/iphone/Downloads/dify-main/docker
+   cp .env.example .env
+   docker compose up -d
+   ```
+2. Open `http://localhost/install`, finish the initial Dify setup, then create and publish two workflow apps:
+   - `biglot-agent-poc`
+   - `biglot-research-poc`
+3. Create one API key per workflow app and paste them into:
+   - `DIFY_AGENT_API_KEY`
+   - `DIFY_RESEARCH_API_KEY`
+4. Enable the BigLot routing flags:
+   ```env
+   DIFY_AGENT_ENABLED=1
+   DIFY_RESEARCH_ENABLED=1
+   ```
+
+Notes:
+- BigLot still owns users, chats, and assistant message persistence in Supabase.
+- `normal` chat and `discussion` mode stay on the legacy backend.
+- If Dify fails before returning text, BigLot automatically falls back to the legacy `agent` / `research` path.
 
 ## Database Schema (Supabase)
 

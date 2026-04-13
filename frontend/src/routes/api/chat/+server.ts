@@ -145,7 +145,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 				};
 			}
 		} catch {
-			// Ignore bot lookup failures and keep default behavior.
+			// Ignore bot lookup failures and keep the default chat flow.
 		}
 	}
 
@@ -172,6 +172,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		fileName: latestUserMessage.file_name,
 		hasImage: hasImageInput
 	});
+
 	const routeType: AgentRouteType =
 		chatMode === 'discussion'
 			? 'discussion'
@@ -345,9 +346,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		}
 
 		return json(
-			{
-				error: error instanceof Error ? error.message : 'Failed to save user message'
-			},
+			{ error: error instanceof Error ? error.message : 'Failed to save user message' },
 			{ status: 500, headers: { 'X-BigLot-Mode': mode, 'X-BigLot-Model': runModelLabel } }
 		);
 	}
@@ -362,17 +361,15 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const activeChatId = effectiveChatId;
 	const encoder = new TextEncoder();
 	const readableStream = new ReadableStream({
-			async start(controller) {
-				let runId: string | null = null;
-				let runIdPromise: Promise<string | null> | null = null;
-				let rootObservation: LangfuseChain | null = null;
-				let planUsed = false;
-				let toolCallCount = 0;
-				let streamedText = '';
-				let assistantMessageId: string | undefined;
-				let finalContentBlocks: ContentBlock[] = [];
-				const toolStarts = new Map<string, { name: string; args: Record<string, unknown>; startedAt: number }>();
-				const toolObservations = new Map<string, LangfuseTool>();
+		async start(controller) {
+			let runId: string | null = null;
+			let runIdPromise: Promise<string | null> | null = null;
+			let planUsed = false;
+			let toolCallCount = 0;
+			let streamedText = '';
+			let assistantMessageId: string | undefined;
+			let finalContentBlocks: ContentBlock[] = [];
+			const toolStarts = new Map<string, { name: string; args: Record<string, unknown>; startedAt: number }>();
 
 			const completeRun = async (status: 'complete' | 'error', errorMessage?: string) => {
 				await runIdPromise?.catch(() => null);
@@ -415,24 +412,12 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 				}
 			};
 
-				const finishSuccess = async (contentBlocks: ContentBlock[] = []) => {
-					await completeRun('complete');
-					await persistAssistantMessage(contentBlocks.length > 0 ? contentBlocks : undefined);
-					rootObservation?.update({
-						output: {
-							status: 'complete',
-							runId,
-							assistantMessageId,
-							toolCallCount,
-							planUsed,
-							contentBlockCount: contentBlocks.length,
-							streamedTextLength: streamedText.length,
-							assistantPreview: summarizeText(streamedText, 1000)
-						}
-					});
-					controller.enqueue(
-						encoder.encode(
-							sseEvent('done', {
+			const finishSuccess = async (contentBlocks: ContentBlock[] = []) => {
+				await completeRun('complete');
+				await persistAssistantMessage(contentBlocks.length > 0 ? contentBlocks : undefined);
+				controller.enqueue(
+					encoder.encode(
+						sseEvent('done', {
 							runId,
 							routeType,
 							contentBlocks,

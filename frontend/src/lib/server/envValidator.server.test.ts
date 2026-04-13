@@ -212,6 +212,26 @@ describe('validateEnvironment', () => {
 		expect(result.warnings).toContainEqual(expect.stringContaining('TAVILY_API_KEY may not be valid'));
 	});
 
+	it('warns when Dify is enabled without base URL or API key', () => {
+		setMinimalValid();
+		setEnv({ DIFY_AGENT_ENABLED: '1' });
+		const result = validateEnvironment();
+		expect(result.warnings).toContain('DIFY_BASE_URL is required when Dify integration is enabled');
+		expect(result.warnings).toContain('DIFY_AGENT_API_KEY is required when DIFY_AGENT_ENABLED is on');
+	});
+
+	it('warns when DIFY_TIMEOUT_MS is invalid', () => {
+		setMinimalValid();
+		setEnv({
+			DIFY_BASE_URL: 'http://localhost:5001/v1',
+			DIFY_RESEARCH_ENABLED: '1',
+			DIFY_RESEARCH_API_KEY: 'app-key',
+			DIFY_TIMEOUT_MS: '250'
+		});
+		const result = validateEnvironment();
+		expect(result.warnings).toContain('DIFY_TIMEOUT_MS should be an integer >= 1000');
+	});
+
 	it('no Tavily warning for valid key', () => {
 		setMinimalValid();
 		setEnv({ TAVILY_API_KEY: 'tvly-test123' });

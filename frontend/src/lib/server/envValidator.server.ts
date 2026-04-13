@@ -134,6 +134,30 @@ export function validateEnvironment(): EnvValidationResult {
         }
     }
 
+    const difyAgentEnabled = ['1', 'true'].includes((getEnv('DIFY_AGENT_ENABLED') ?? '').toLowerCase());
+    const difyResearchEnabled = ['1', 'true'].includes((getEnv('DIFY_RESEARCH_ENABLED') ?? '').toLowerCase());
+    const difyBaseUrl = getEnv('DIFY_BASE_URL') ?? '';
+    if (difyAgentEnabled || difyResearchEnabled) {
+        if (!difyBaseUrl.trim()) {
+            warnings.push('DIFY_BASE_URL is required when Dify integration is enabled');
+        } else if (!/^https?:\/\//.test(difyBaseUrl)) {
+            warnings.push('DIFY_BASE_URL should be a full http/https URL');
+        }
+    }
+    if (difyAgentEnabled && !(getEnv('DIFY_AGENT_API_KEY') ?? '').trim()) {
+        warnings.push('DIFY_AGENT_API_KEY is required when DIFY_AGENT_ENABLED is on');
+    }
+    if (difyResearchEnabled && !(getEnv('DIFY_RESEARCH_API_KEY') ?? '').trim()) {
+        warnings.push('DIFY_RESEARCH_API_KEY is required when DIFY_RESEARCH_ENABLED is on');
+    }
+    const difyTimeoutMs = getEnv('DIFY_TIMEOUT_MS') ?? '';
+    if (difyTimeoutMs) {
+        const parsed = Number.parseInt(difyTimeoutMs, 10);
+        if (!Number.isFinite(parsed) || parsed < 1000) {
+            warnings.push('DIFY_TIMEOUT_MS should be an integer >= 1000');
+        }
+    }
+
     // Telegram (optional but warn if partially configured)
     const telegramToken = getEnv('TELEGRAM_BOT_TOKEN') ?? '';
     const telegramUsername = getEnv('TELEGRAM_BOT_USERNAME') ?? '';
