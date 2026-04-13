@@ -1,5 +1,6 @@
 // Persistent Memory - CRUD operations for user memory across sessions
 import { getSupabaseAdminClient } from './supabaseAdmin.server';
+import { createMemorySearchService, isMemorySearchEnabled } from './memorySearch.server';
 
 export type MemoryType = 'portfolio' | 'preference' | 'watchlist' | 'trade_history' | 'note';
 
@@ -12,6 +13,8 @@ export type MemoryEntry = {
 	created_at: string;
 	updated_at: string;
 };
+
+const memorySearchService = createMemorySearchService({ saveMemory });
 
 /**
  * Save or update a memory entry (upsert by user + type + key).
@@ -140,5 +143,40 @@ export async function getMemoryContext(userId: string): Promise<string | null> {
 		return `[User Memory]\n${sections.join('\n')}`;
 	} catch {
 		return null;
+	}
+}
+
+export function getMemorySearchService() {
+	return memorySearchService;
+}
+
+export async function getRelevantMemoryContext(input: {
+	userId: string;
+	query?: string | null;
+	maxItems?: number;
+}): Promise<string | null> {
+	if (!input.userId || input.userId === 'anonymous') return null;
+
+	if (!isMemorySearchEnabled() || !input.query?.trim()) {
+		return getMemoryContext(input.userId);
+	}
+
+	try {
+		const hits = await memorySearchService.searchContext({
+			biglotUserId: input.userId,
+			query: input.query,
+			maxResults: input.maxItems ?? 6
+		});
+
+		if (hits.length === 0) {
+			return getMemoryContext(input.userId);
+		}
+
+		return [
+			'[Relevant Memory]',
+			...hits.map((hit, index) => `${index + 1}. [${hit.sourceType}] ${hit.label}: ${hit.snippet}`)
+		].join('\n');
+	} catch {
+		return getMemoryContext(input.userId);
 	}
 }

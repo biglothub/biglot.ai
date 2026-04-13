@@ -22,9 +22,15 @@ import {
 	saveChatMessage,
 	validateBiglotUserId
 } from '$lib/server/chatPersistence.server';
-import { getMemoryContext } from '$lib/server/memory.server';
+import { getRelevantMemoryContext } from '$lib/server/memory.server';
+import {
+	buildDifyWorkflowInputs,
+	getDifyWorkflowRuntime,
+	runDifyWorkflow
+} from '$lib/server/difyWorkflow.server';
+import { buildResearchReportBlock } from '$lib/server/researchReport.server';
 import { runWithMemoryToolUserId } from '$lib/server/tools/memory.tool';
-import type { AgentRouteType, ContentBlock, ResearchReportBlock, ResearchSection } from '$lib/types/contentBlock';
+import type { AgentRouteType, ContentBlock } from '$lib/types/contentBlock';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 type JsonObject = Record<string, unknown>;
@@ -53,53 +59,7 @@ function sseEvent(event: string, data: unknown): string {
 	return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-/** Parse streamed synthesis text into structured sections by ## headers */
-function parseResearchSections(text: string): ResearchSection[] {
-    const lines = text.split('\n');
-    const sections: ResearchSection[] = [];
-    let currentTitle = '';
-    let currentLines: string[] = [];
-
-    for (const line of lines) {
-        const headerMatch = line.match(/^##\s+(.+)/);
-        if (headerMatch) {
-            if (currentTitle && currentLines.length > 0) {
-                sections.push({
-                    id: `section_${sections.length + 1}`,
-                    title: currentTitle,
-                    content: currentLines.join('\n').trim()
-                });
-            }
-            currentTitle = headerMatch[1].trim();
-            currentLines = [];
-        } else {
-            currentLines.push(line);
-        }
-    }
-
-    // Push last section
-    if (currentTitle && currentLines.length > 0) {
-        sections.push({
-            id: `section_${sections.length + 1}`,
-            title: currentTitle,
-            content: currentLines.join('\n').trim()
-        });
-    }
-
-    // If no ## headers found, wrap entire text as single section
-    if (sections.length === 0 && text.trim().length > 0) {
-        sections.push({
-            id: 'section_1',
-            title: 'Research Findings',
-            content: text.trim()
-        });
-    }
-
-    return sections;
-}
-
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-	// Rate limiting
 	const clientIp = getClientAddress() || 'unknown';
 	const rateLimitResult = checkRateLimit(clientIp, RATE_LIMITS.chat);
 
@@ -135,6 +95,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const initialChatId = typeof payload.chatId === 'string' ? payload.chatId : null;
 	const rawBiglotUserId = typeof payload.biglotUserId === 'string' ? payload.biglotUserId : null;
 	const botId = typeof payload.botId === 'string' ? payload.botId : null;
+
 	let biglotUserId: string;
 	try {
 		biglotUserId = validateBiglotUserId(rawBiglotUserId);
@@ -144,7 +105,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const MAX_MESSAGES = 50;
 	const MAX_CHARS = 8000;
-
 	const MAX_FILE_CHARS = 40_000;
 
 	const safeMessages = messagesRaw
@@ -158,14 +118,14 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 				? message.file_content.slice(0, MAX_FILE_CHARS)
 				: undefined
 		}))
-		.filter((m) =>
-			m.content.trim().length > 0 ||
-			(m.role === 'user' && m.image_url) ||
-			(m.role === 'user' && m.file_content)
+		.filter(
+			(message) =>
+				message.content.trim().length > 0 ||
+				(message.role === 'user' && message.image_url) ||
+				(message.role === 'user' && message.file_content)
 		)
 		.slice(-MAX_MESSAGES);
 
-	// Custom bot lookup (does not affect default flow when botId is absent)
 	let customBot: { system_prompt: string; tools: string[]; default_model: string | null } | null = null;
 	if (botId && biglotUserId) {
 		try {
@@ -178,16 +138,20 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 				.single();
 
 			if (!botError && data && data.biglot_user_id === biglotUserId) {
-				customBot = { system_prompt: data.system_prompt, tools: data.tools ?? [], default_model: data.default_model };
+				customBot = {
+					system_prompt: data.system_prompt,
+					tools: data.tools ?? [],
+					default_model: data.default_model
+				};
 			}
 		} catch {
-			// If bot lookup fails, fall through to default behavior
+			// Ignore bot lookup failures and keep default behavior.
 		}
 	}
 
 	const mode = normalizeAgentMode(payload.mode);
 	const chatMode = customBot
-		? 'agent' // Custom bots always use agent mode (tools enabled)
+		? 'agent'
 		: payload.chatMode === 'agent'
 			? 'agent'
 			: payload.chatMode === 'discussion'
@@ -195,11 +159,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 				: payload.chatMode === 'research'
 					? 'research'
 					: 'normal';
+
 	const latestUserMessage = [...safeMessages].reverse().find((message) => message.role === 'user');
 	if (!latestUserMessage) {
 		return json({ error: 'At least one user message is required' }, { status: 400 });
 	}
-	const lastUserMessage = latestUserMessage?.content ?? '';
+
+	const lastUserMessage = latestUserMessage.content;
 	const hasImageInput = safeMessages.some((message) => message.role === 'user' && !!message.image_url);
 	const pendingChatTitle = buildChatTitle({
 		content: latestUserMessage.content,
@@ -218,15 +184,28 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	const isDeepResearch = routeType === 'deep_research';
 	const planningEnabled = shouldEnablePlanning(chatMode, routeType);
 
-	// System prompt: custom bot or default mode
 	const systemPrompt = customBot
 		? getCustomBotSystemPrompt(customBot.system_prompt, customBot.tools, planningEnabled, isDeepResearch)
 		: getSystemPrompt(mode, planningEnabled, isDeepResearch);
 
-	const { selectedModel, runModelLabel, runProviderLabel, clientBundle } = resolveChatModelRuntime(
-		chatMode,
-		customBot?.default_model ?? null
-	);
+	const difyRuntime =
+		chatMode === 'agent' || chatMode === 'research'
+			? getDifyWorkflowRuntime(chatMode, {
+					hasImageInput,
+					hasCustomBot: !!customBot
+				})
+			: null;
+
+	let legacyRuntimeCache: ReturnType<typeof resolveChatModelRuntime> | null = null;
+	const getLegacyRuntime = () => {
+		if (!legacyRuntimeCache) {
+			legacyRuntimeCache = resolveChatModelRuntime(chatMode, customBot?.default_model ?? null);
+		}
+		return legacyRuntimeCache;
+	};
+
+	const runModelLabel = difyRuntime ? difyRuntime.runModelLabel : getLegacyRuntime().runModelLabel;
+	const runProviderLabel = difyRuntime ? difyRuntime.runProviderLabel : getLegacyRuntime().runProviderLabel;
 
 	if (env.BIGLOT_CHAT_ECHO_MODE === '1') {
 		return new Response(`Mode: ${mode}\nModel: ${runModelLabel}\n`, {
@@ -239,25 +218,28 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		});
 	}
 
-	if (clientBundle && hasImageInput && !clientBundle.supportsImageInput) {
+	const legacyRuntime = difyRuntime ? null : getLegacyRuntime();
+	if (legacyRuntime?.clientBundle && hasImageInput && !legacyRuntime.clientBundle.supportsImageInput) {
 		const configuredKey =
 			chatMode === 'normal'
 				? 'NORMAL_AI_MODEL'
 				: chatMode === 'research'
 					? 'RESEARCH_AI_MODEL'
 					: 'AGENT_AI_MODEL';
+
 		return json(
 			{
-				error: `Model '${selectedModel}' does not support image input. Switch ${configuredKey} or AI_MODEL to 'gpt-4o' or 'gpt-4o-mini'.`
+				error: `Model '${legacyRuntime.selectedModel}' does not support image input. Switch ${configuredKey} or AI_MODEL to 'gpt-4o' or 'gpt-4o-mini'.`
 			},
 			{ status: 400, headers: { 'X-BigLot-Mode': mode, 'X-BigLot-Model': runModelLabel } }
 		);
 	}
 
-	// Fetch user memory context for personalization
-	const memoryContext = await getMemoryContext(biglotUserId).catch(() => null);
+	const memoryContext = await getRelevantMemoryContext({
+		userId: biglotUserId,
+		query: lastUserMessage
+	}).catch(() => null);
 
-    // Build formatted messages for OpenAI
 	const formattedMessages: ChatCompletionMessageParam[] = [
 		{
 			role: 'system',
@@ -267,10 +249,21 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 			if (message.role === 'user' && message.file_content) {
 				const ext = message.file_name?.split('.').pop()?.toLowerCase() ?? '';
 				const langMap: Record<string, string> = {
-					py: 'python', js: 'javascript', ts: 'typescript',
-					json: 'json', csv: 'csv', md: 'markdown',
-					html: 'html', css: 'css', xml: 'xml', yaml: 'yaml', yml: 'yaml',
-					pdf: 'text', xlsx: 'csv', xls: 'csv', docx: 'text'
+					py: 'python',
+					js: 'javascript',
+					ts: 'typescript',
+					json: 'json',
+					csv: 'csv',
+					md: 'markdown',
+					html: 'html',
+					css: 'css',
+					xml: 'xml',
+					yaml: 'yaml',
+					yml: 'yaml',
+					pdf: 'text',
+					xlsx: 'csv',
+					xls: 'csv',
+					docx: 'text'
 				};
 				const lang = langMap[ext] ?? ext;
 				const isParsed = ['pdf', 'xlsx', 'xls', 'docx'].includes(ext);
@@ -285,12 +278,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 					role: 'user',
 					content: message.image_url
 						? [
-							{ type: 'text' as const, text: fullText },
-							{ type: 'image_url' as const, image_url: { url: message.image_url } }
-						  ]
+								{ type: 'text' as const, text: fullText },
+								{ type: 'image_url' as const, image_url: { url: message.image_url } }
+							]
 						: fullText
 				};
 			}
+
 			if (message.role === 'user' && message.image_url) {
 				return {
 					role: 'user',
@@ -300,12 +294,27 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 					]
 				};
 			}
+
 			return { role: message.role, content: message.content };
 		})
 	];
 
+	const difyInputs =
+		difyRuntime && (chatMode === 'agent' || chatMode === 'research')
+			? buildDifyWorkflowInputs({
+					chatMode,
+					mode,
+					biglotUserId,
+					messages: safeMessages,
+					query: lastUserMessage,
+					context: memoryContext,
+					routeType
+				})
+			: null;
+
 	let effectiveChatId = initialChatId;
 	let createdChat: { id: string; title: string | null } | null = null;
+
 	try {
 		if (!effectiveChatId) {
 			const chat = await createChatRecord({
@@ -342,92 +351,131 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 			{ status: 500, headers: { 'X-BigLot-Mode': mode, 'X-BigLot-Model': runModelLabel } }
 		);
 	}
+
 	if (!effectiveChatId) {
 		return json(
 			{ error: 'Failed to create chat' },
 			{ status: 500, headers: { 'X-BigLot-Mode': mode, 'X-BigLot-Model': runModelLabel } }
 		);
 	}
+
 	const activeChatId = effectiveChatId;
+	const encoder = new TextEncoder();
+	const readableStream = new ReadableStream({
+			async start(controller) {
+				let runId: string | null = null;
+				let runIdPromise: Promise<string | null> | null = null;
+				let rootObservation: LangfuseChain | null = null;
+				let planUsed = false;
+				let toolCallCount = 0;
+				let streamedText = '';
+				let assistantMessageId: string | undefined;
+				let finalContentBlocks: ContentBlock[] = [];
+				const toolStarts = new Map<string, { name: string; args: Record<string, unknown>; startedAt: number }>();
+				const toolObservations = new Map<string, LangfuseTool>();
 
-    // SSE streaming
-    const encoder = new TextEncoder();
-    const readableStream = new ReadableStream({
-        async start(controller) {
-            let runId: string | null = null;
-            let runIdPromise: Promise<string | null> | null = null;
-            let planUsed = false;
-            let toolCallCount = 0;
-            let streamedText = '';
-            let assistantMessageId: string | undefined;
-            let finalContentBlocks: ContentBlock[] = [];
-            const toolStarts = new Map<string, { name: string; args: Record<string, unknown>; startedAt: number }>();
+			const completeRun = async (status: 'complete' | 'error', errorMessage?: string) => {
+				await runIdPromise?.catch(() => null);
+				if (!runId) return;
 
-            try {
-                if (createdChat) {
-                    controller.enqueue(
-                        encoder.encode(
-                            sseEvent('chat_created', {
-                                chatId: createdChat.id,
-                                title: createdChat.title ?? pendingChatTitle
-                            })
-                        )
-                    );
-                }
+				await updateAgentRun({
+					runId,
+					status,
+					planUsed,
+					toolCallCount,
+					textOutputLength: streamedText.length,
+					errorMessage
+				});
+			};
 
-                runIdPromise = createAgentRun({
-                    chatId: activeChatId,
-                    biglotUserId,
-                    mode,
-                    chatMode,
-                    routeType,
-                    provider: runProviderLabel,
-                    model: runModelLabel,
-                    clientIp,
-                    messageCount: safeMessages.length,
-                    hasImageInput,
-                    lastUserMessage
-                }).then((id) => {
-                    runId = id;
-                    if (id) {
-                        controller.enqueue(encoder.encode(sseEvent('run_id', { runId: id })));
-                    }
-                    return id;
-                }).catch(() => null);
+			const persistAssistantMessage = async (contentBlocks?: ContentBlock[]) => {
+				try {
+					const persisted = await saveChatMessage({
+						chatId: activeChatId,
+						biglotUserId,
+						role: 'assistant',
+						content: streamedText,
+						mode,
+						channel: 'web',
+						runId,
+						contentBlocks
+					});
+					assistantMessageId = persisted.id;
+				} catch (persistError) {
+					controller.enqueue(
+						encoder.encode(
+							sseEvent('error', {
+								message:
+									persistError instanceof Error
+										? persistError.message
+										: 'Failed to save assistant message'
+							})
+						)
+					);
+				}
+			};
 
-                controller.enqueue(
-                    encoder.encode(
-                        sseEvent('run_start', {
-                            runId: null,
-                            routeType,
-                            mode,
-                            chatMode,
-                            model: runModelLabel
-                        })
-                    )
-                );
+				const finishSuccess = async (contentBlocks: ContentBlock[] = []) => {
+					await completeRun('complete');
+					await persistAssistantMessage(contentBlocks.length > 0 ? contentBlocks : undefined);
+					rootObservation?.update({
+						output: {
+							status: 'complete',
+							runId,
+							assistantMessageId,
+							toolCallCount,
+							planUsed,
+							contentBlockCount: contentBlocks.length,
+							streamedTextLength: streamedText.length,
+							assistantPreview: summarizeText(streamedText, 1000)
+						}
+					});
+					controller.enqueue(
+						encoder.encode(
+							sseEvent('done', {
+							runId,
+							routeType,
+							contentBlocks,
+							messageId: assistantMessageId
+						})
+					)
+				);
+			};
 
-                if (chatMode === 'agent' || chatMode === 'research') {
-                    if (!clientBundle) {
-                        throw new Error('Single-model runtime is not available for this chat mode');
-                    }
+			const appendResearchReportIfNeeded = (startedAt: number, contentBlocks: ContentBlock[]) => {
+				if (!isDeepResearch || streamedText.length === 0) return;
 
-                    const { client, apiModel } = clientBundle;
+				const report = buildResearchReportBlock({
+					query: lastUserMessage,
+					text: streamedText,
+					toolCallCount,
+					startedAt
+				});
+				contentBlocks.push(report);
+				controller.enqueue(encoder.encode(sseEvent('research_report', { report })));
+			};
 
-                    // Agent / Research mode: GPT-4o with tool calling via agent loop
-                    const allBlocks = finalContentBlocks;
+			const runLegacyAgentOrResearch = async () => {
+				const runtime = getLegacyRuntime();
+				if (!runtime.clientBundle) {
+					throw new Error('Single-model runtime is not available for this chat mode');
+				}
 
-                    const researchStartTime = Date.now();
+				const { client, apiModel } = runtime.clientBundle;
+				const allBlocks = finalContentBlocks;
+				const researchStartTime = Date.now();
+				const keepAliveInterval = isDeepResearch
+					? setInterval(() => {
+							try {
+								controller.enqueue(encoder.encode(': keepalive\n\n'));
+							} catch {
+								// Ignore closed stream writes.
+							}
+						}, 15_000)
+					: null;
 
-                    // Keep-alive interval to prevent idle timeout on long research
-                    const keepAliveInterval = isDeepResearch
-                        ? setInterval(() => {
-                              try { controller.enqueue(encoder.encode(': keepalive\n\n')); } catch { /* stream closed */ }
-                          }, 15_000)
-                        : null;
-
-                    const deepResearchMaxIterations = parseInt(env.DEEP_RESEARCH_MAX_ITERATIONS || '8', 10);
-
+				try {
+					const deepResearchMaxIterations = parseInt(env.DEEP_RESEARCH_MAX_ITERATIONS || '8', 10);
 					const resultBlocks = await runWithMemoryToolUserId(biglotUserId, () =>
 						runAgentLoop({
 							client,
@@ -514,277 +562,199 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 						})
 					);
 
-                    if (keepAliveInterval) clearInterval(keepAliveInterval);
+					for (const block of resultBlocks) {
+						if (!allBlocks.includes(block)) {
+							allBlocks.push(block);
+						}
+					}
 
-                    for (const block of resultBlocks) {
-                        if (!allBlocks.includes(block)) {
-                            allBlocks.push(block);
-                        }
-                    }
+					appendResearchReportIfNeeded(researchStartTime, allBlocks);
+					await finishSuccess(allBlocks);
+				} finally {
+					if (keepAliveInterval) clearInterval(keepAliveInterval);
+				}
+			};
 
-                    // Post-process: build ResearchReportBlock for deep research
-                    if (isDeepResearch && streamedText.length > 0) {
-                        const sections = parseResearchSections(streamedText);
-                        const report: ResearchReportBlock = {
-                            type: 'research_report',
-                            reportId: `research_${Date.now()}`,
-                            title: `Research: ${lastUserMessage.slice(0, 60)}`,
-                            query: lastUserMessage,
-                            sections,
-                            status: 'complete',
-                            toolCallCount,
-                            totalDurationMs: Date.now() - researchStartTime,
-                            createdAt: researchStartTime,
-                            updatedAt: Date.now()
-                        };
-                        allBlocks.push(report);
-                        controller.enqueue(encoder.encode(sseEvent('research_report', { report })));
-                    }
+			const runDifyAgentOrResearch = async () => {
+				if (!difyRuntime || !difyInputs) return false;
 
-                    if (runIdPromise) {
-                        await runIdPromise;
-                    }
-                    if (runId) {
-                        await updateAgentRun({
-                            runId,
-                            status: 'complete',
-                            planUsed,
-                            toolCallCount,
-                            textOutputLength: streamedText.length
-                        });
-                    }
+				const allBlocks = finalContentBlocks;
+				const researchStartTime = Date.now();
 
-                    try {
-                        const persisted = await saveChatMessage({
-                            chatId: activeChatId,
-                            biglotUserId,
-                            role: 'assistant',
-                            content: streamedText,
-                            mode,
-                            channel: 'web',
-                            runId,
-                            contentBlocks: allBlocks
-                        });
-                        assistantMessageId = persisted.id;
-                    } catch (persistError) {
-                        controller.enqueue(
-                            encoder.encode(
-                                sseEvent('error', {
-                                    message:
-                                        persistError instanceof Error
-                                            ? persistError.message
-                                            : 'Failed to save assistant message'
-                                })
-                            )
-                        );
-                    }
+				await runDifyWorkflow({
+					runtime: difyRuntime,
+					user: biglotUserId,
+					inputs: difyInputs,
+					onTextDelta: (text) => {
+						streamedText += text;
+						controller.enqueue(encoder.encode(sseEvent('text_delta', { content: text })));
+					}
+				});
 
-                    controller.enqueue(
-                        encoder.encode(
-                            sseEvent('done', {
-                                runId,
-                                routeType,
-                                contentBlocks: allBlocks,
-                                messageId: assistantMessageId
-                            })
-                        )
-                    );
-                } else if (chatMode === 'discussion') {
-                    // Discussion mode: 3 AI panelists debate
-                    const discussionBlocks = await runDiscussionLoop({
-                        topic: lastUserMessage,
-                        conversationHistory: formattedMessages,
-                        callbacks: {
-                            onDiscussionStart: (block) => {
-                                controller.enqueue(encoder.encode(sseEvent('discussion_start', { block })));
-                            },
-                            onTurnStart: ({ discussionId, turnId, panelistId, round, model }) => {
-                                controller.enqueue(
-                                    encoder.encode(
-                                        sseEvent('discussion_turn_start', { discussionId, turnId, panelistId, round, model })
-                                    )
-                                );
-                            },
-                            onTextDelta: ({ discussionId, turnId, panelistId, round, text }) => {
-                                streamedText += text;
-                                controller.enqueue(
-                                    encoder.encode(
-                                        sseEvent('discussion_text_delta', {
-                                            discussionId,
-                                            turnId,
-                                            panelistId,
-                                            round,
-                                            content: text
-                                        })
-                                    )
-                                );
-                            },
-                            onTurnEnd: ({ discussionId, turnId, panelistId, round }) => {
-                                controller.enqueue(
-                                    encoder.encode(
-                                        sseEvent('discussion_turn_end', { discussionId, turnId, panelistId, round })
-                                    )
-                                );
-                            },
-                            onRoundSkipped: (round, reason) => {
-                                controller.enqueue(encoder.encode(sseEvent('discussion_round_skipped', { round, reason })));
-                            },
-                            onError: (message) => {
-                                controller.enqueue(encoder.encode(sseEvent('error', { message })));
-                            }
-                        }
-                    });
-                    finalContentBlocks = discussionBlocks;
+				appendResearchReportIfNeeded(researchStartTime, allBlocks);
+				await finishSuccess(allBlocks);
+				return true;
+			};
 
-                    if (runIdPromise) {
-                        await runIdPromise;
-                    }
-                    if (runId) {
-                        await updateAgentRun({
-                            runId,
-                            status: 'complete',
-                            planUsed: false,
-                            toolCallCount: 0,
-                            textOutputLength: streamedText.length
-                        });
-                    }
+			const runDiscussion = async () => {
+				const discussionBlocks = await runDiscussionLoop({
+					topic: lastUserMessage,
+					conversationHistory: formattedMessages,
+					callbacks: {
+						onDiscussionStart: (block) => {
+							controller.enqueue(encoder.encode(sseEvent('discussion_start', { block })));
+						},
+						onTurnStart: ({ discussionId, turnId, panelistId, round, model }) => {
+							controller.enqueue(
+								encoder.encode(
+									sseEvent('discussion_turn_start', { discussionId, turnId, panelistId, round, model })
+								)
+							);
+						},
+						onTextDelta: ({ discussionId, turnId, panelistId, round, text }) => {
+							streamedText += text;
+							controller.enqueue(
+								encoder.encode(
+									sseEvent('discussion_text_delta', {
+										discussionId,
+										turnId,
+										panelistId,
+										round,
+										content: text
+									})
+								)
+							);
+						},
+						onTurnEnd: ({ discussionId, turnId, panelistId, round }) => {
+							controller.enqueue(
+								encoder.encode(
+									sseEvent('discussion_turn_end', { discussionId, turnId, panelistId, round })
+								)
+							);
+						},
+						onRoundSkipped: (round, reason) => {
+							controller.enqueue(encoder.encode(sseEvent('discussion_round_skipped', { round, reason })));
+						},
+						onError: (message) => {
+							controller.enqueue(encoder.encode(sseEvent('error', { message })));
+						}
+					}
+				});
 
-                    try {
-                        const persisted = await saveChatMessage({
-                            chatId: activeChatId,
-                            biglotUserId,
-                            role: 'assistant',
-                            content: streamedText,
-                            mode,
-                            channel: 'web',
-                            runId,
-                            contentBlocks: discussionBlocks
-                        });
-                        assistantMessageId = persisted.id;
-                    } catch (persistError) {
-                        controller.enqueue(
-                            encoder.encode(
-                                sseEvent('error', {
-                                    message:
-                                        persistError instanceof Error
-                                            ? persistError.message
-                                            : 'Failed to save assistant message'
-                                })
-                            )
-                        );
-                    }
+				finalContentBlocks = discussionBlocks;
+				await finishSuccess(discussionBlocks);
+			};
 
-                    controller.enqueue(
-                        encoder.encode(
-                            sseEvent('done', {
-                                runId,
-                                routeType,
-                                contentBlocks: discussionBlocks,
-                                messageId: assistantMessageId
-                            })
-                        )
-                    );
-                } else {
-                    if (!clientBundle) {
-                        throw new Error('Single-model runtime is not available for this chat mode');
-                    }
+			const runNormal = async () => {
+				const runtime = getLegacyRuntime();
+				if (!runtime.clientBundle) {
+					throw new Error('Single-model runtime is not available for this chat mode');
+				}
 
-                    const { client, apiModel } = clientBundle;
+				const { client, apiModel } = runtime.clientBundle;
+				const stream = await client.chat.completions.create({
+					model: apiModel,
+					messages: formattedMessages,
+					stream: true
+				});
 
-                    // Normal mode: direct streaming, no tools
-                    const stream = await client.chat.completions.create({
-                        model: apiModel,
-                        messages: formattedMessages,
-                        stream: true
-                    });
+				const thinkFilter = new StreamingThinkFilter();
+				for await (const chunk of stream) {
+					const raw = chunk.choices[0]?.delta?.content;
+					if (!raw) continue;
 
-                    const thinkFilter = new StreamingThinkFilter();
-                    for await (const chunk of stream) {
-                        const raw = chunk.choices[0]?.delta?.content;
-                        if (raw) {
-                            const text = thinkFilter.process(raw);
-                            if (text) {
-                                streamedText += text;
-                                controller.enqueue(encoder.encode(sseEvent('text_delta', { content: text })));
-                            }
-                        }
-                    }
+					const text = thinkFilter.process(raw);
+					if (text) {
+						streamedText += text;
+						controller.enqueue(encoder.encode(sseEvent('text_delta', { content: text })));
+					}
+				}
 
-                    if (runIdPromise) {
-                        await runIdPromise;
-                    }
-                    if (runId) {
-                        await updateAgentRun({
-                            runId,
-                            status: 'complete',
-                            planUsed: false,
-                            toolCallCount: 0,
-                            textOutputLength: streamedText.length
-                        });
-                    }
+				await finishSuccess([]);
+			};
 
-                    try {
-                        const persisted = await saveChatMessage({
-                            chatId: activeChatId,
-                            biglotUserId,
-                            role: 'assistant',
-                            content: streamedText,
-                            mode,
-                            channel: 'web',
-                            runId
-                        });
-                        assistantMessageId = persisted.id;
-                    } catch (persistError) {
-                        controller.enqueue(
-                            encoder.encode(
-                                sseEvent('error', {
-                                    message:
-                                        persistError instanceof Error
-                                            ? persistError.message
-                                            : 'Failed to save assistant message'
-                                })
-                            )
-                        );
-                    }
+			try {
+				if (createdChat) {
+					controller.enqueue(
+						encoder.encode(
+							sseEvent('chat_created', {
+								chatId: createdChat.id,
+								title: createdChat.title ?? pendingChatTitle
+							})
+						)
+					);
+				}
 
-                    controller.enqueue(
-                        encoder.encode(
-                            sseEvent('done', {
-                                runId,
-                                routeType,
-                                contentBlocks: [],
-                                messageId: assistantMessageId
-                            })
-                        )
-                    );
-                }
-            } catch (e: unknown) {
-                const message = e instanceof Error ? e.message : `Failed to call ${runProviderLabel}`;
-                await runIdPromise?.catch(() => null);
-                if (runId) {
-                    await updateAgentRun({
-                        runId,
-                        status: 'error',
-                        planUsed,
-                        toolCallCount,
-                        textOutputLength: streamedText.length,
-                        errorMessage: message
-                    });
-                }
-                controller.enqueue(encoder.encode(sseEvent('error', { message })));
-            } finally {
-                controller.close();
-            }
-        }
-    });
+				runIdPromise = createAgentRun({
+					chatId: activeChatId,
+					biglotUserId,
+					mode,
+					chatMode,
+					routeType,
+					provider: runProviderLabel,
+					model: runModelLabel,
+					clientIp,
+					messageCount: safeMessages.length,
+					hasImageInput,
+					lastUserMessage
+				})
+					.then((id) => {
+						runId = id;
+						if (id) {
+							controller.enqueue(encoder.encode(sseEvent('run_id', { runId: id })));
+						}
+						return id;
+					})
+					.catch(() => null);
 
-    return new Response(readableStream, {
-        headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-BigLot-Mode': mode,
-            'X-BigLot-Model': runModelLabel
-        }
-    });
+				controller.enqueue(
+					encoder.encode(
+						sseEvent('run_start', {
+							runId: null,
+							routeType,
+							mode,
+							chatMode,
+							model: runModelLabel
+						})
+					)
+				);
+
+				if (chatMode === 'agent' || chatMode === 'research') {
+					if (difyRuntime && difyInputs) {
+						try {
+							await runDifyAgentOrResearch();
+						} catch (difyError) {
+							if (streamedText.length === 0) {
+								await runLegacyAgentOrResearch();
+							} else {
+								throw difyError;
+							}
+						}
+					} else {
+						await runLegacyAgentOrResearch();
+					}
+				} else if (chatMode === 'discussion') {
+					await runDiscussion();
+				} else {
+					await runNormal();
+				}
+			} catch (error: unknown) {
+				const message = error instanceof Error ? error.message : `Failed to call ${runProviderLabel}`;
+				await completeRun('error', message);
+				controller.enqueue(encoder.encode(sseEvent('error', { message })));
+			} finally {
+				controller.close();
+			}
+		}
+	});
+
+	return new Response(readableStream, {
+		headers: {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			Connection: 'keep-alive',
+			'X-BigLot-Mode': mode,
+			'X-BigLot-Model': runModelLabel
+		}
+	});
 };

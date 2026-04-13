@@ -1,7 +1,7 @@
 // Memory Tools - save_memory, recall_memory for persistent user context
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { registerTool, type ToolResult } from './registry';
-import { saveMemory, recallMemory, deleteMemory, type MemoryType } from '../memory.server';
+import { saveMemory, recallMemory, deleteMemory, getMemorySearchService, type MemoryType } from '../memory.server';
 
 const VALID_TYPES: MemoryType[] = ['portfolio', 'preference', 'watchlist', 'trade_history', 'note'];
 const memoryToolUserStore = new AsyncLocalStorage<string | null>();
@@ -74,7 +74,14 @@ registerTool({
 			};
 		}
 
-		const result = await saveMemory(currentUserId, memoryType, key, value);
+		const result =
+			memoryType === 'preference'
+				? await getMemorySearchService().savePreference({
+						biglotUserId: currentUserId,
+						key,
+						value
+					})
+				: await saveMemory(currentUserId, memoryType, key, value);
 
 		if (!result.success) {
 			return {

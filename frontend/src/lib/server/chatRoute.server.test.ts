@@ -18,9 +18,12 @@ const {
 	getSystemPromptMock,
 	getCustomBotSystemPromptMock,
 	normalizeAgentModeMock,
-	getMemoryContextMock,
+	getRelevantMemoryContextMock,
+	getDifyWorkflowRuntimeMock,
+	runDifyWorkflowMock,
 	runWithMemoryToolUserIdMock,
-	getSupabaseAdminClientMock
+	getSupabaseAdminClientMock,
+	runAgentLoopMock
 } = vi.hoisted(() => ({
 	checkRateLimitMock: vi.fn(),
 	resolveChatModelRuntimeMock: vi.fn(),
@@ -38,9 +41,12 @@ const {
 	getSystemPromptMock: vi.fn(),
 	getCustomBotSystemPromptMock: vi.fn(),
 	normalizeAgentModeMock: vi.fn(),
-	getMemoryContextMock: vi.fn(),
+	getRelevantMemoryContextMock: vi.fn(),
+	getDifyWorkflowRuntimeMock: vi.fn(),
+	runDifyWorkflowMock: vi.fn(),
 	runWithMemoryToolUserIdMock: vi.fn(),
-	getSupabaseAdminClientMock: vi.fn()
+	getSupabaseAdminClientMock: vi.fn(),
+	runAgentLoopMock: vi.fn()
 }));
 
 vi.mock('$lib/server/rateLimiter.server', () => ({
@@ -79,7 +85,20 @@ vi.mock('$lib/agent/systemPrompts', () => ({
 }));
 
 vi.mock('$lib/server/memory.server', () => ({
-	getMemoryContext: getMemoryContextMock
+	getRelevantMemoryContext: getRelevantMemoryContextMock
+}));
+
+vi.mock('$lib/server/difyWorkflow.server', () => ({
+	buildDifyWorkflowInputs: vi.fn(() => ({
+		query: 'hello',
+		chat_history: '',
+		mode: 'agent',
+		biglot_user_id: 'user-12345',
+		context: '',
+		route_type: 'direct_answer'
+	})),
+	getDifyWorkflowRuntime: getDifyWorkflowRuntimeMock,
+	runDifyWorkflow: runDifyWorkflowMock
 }));
 
 vi.mock('$lib/server/tools/memory.tool', () => ({
@@ -91,7 +110,7 @@ vi.mock('$lib/server/supabaseAdmin.server', () => ({
 }));
 
 vi.mock('$lib/server/agentLoop.server', () => ({
-	runAgentLoop: vi.fn()
+	runAgentLoop: runAgentLoopMock
 }));
 
 vi.mock('$lib/server/discussionLoop.server', () => ({
@@ -131,12 +150,20 @@ describe('POST /api/chat', () => {
 		normalizeAgentModeMock.mockReturnValue('coach');
 		classifyChatRouteMock.mockReturnValue('direct_answer');
 		shouldEnablePlanningMock.mockReturnValue(false);
-		getMemoryContextMock.mockResolvedValue(null);
+		getRelevantMemoryContextMock.mockResolvedValue(null);
 		runWithMemoryToolUserIdMock.mockImplementation((_userId: string, callback: () => unknown) => callback());
 		createAgentRunMock.mockResolvedValue(null);
 		updateAgentRunMock.mockResolvedValue(undefined);
 		logToolExecutionMock.mockResolvedValue(undefined);
 		upsertAgentStepRunMock.mockResolvedValue(undefined);
+		getDifyWorkflowRuntimeMock.mockReturnValue(null);
+		runDifyWorkflowMock.mockResolvedValue({
+			workflowRunId: 'workflow-run-1',
+			text: 'Dify says hi',
+			outputs: null,
+			status: 'succeeded'
+		});
+		runAgentLoopMock.mockResolvedValue([]);
 		getSupabaseAdminClientMock.mockReturnValue({
 			from: vi.fn(() => ({
 				select: vi.fn().mockReturnThis(),
@@ -265,5 +292,79 @@ describe('POST /api/chat', () => {
 		const body = await response.text();
 		expect(body).toContain('event: error');
 		expect(body).toContain('provider offline');
+	});
+
+	it('uses Dify for research mode when enabled', async () => {
+		saveChatMessageMock
+			.mockResolvedValueOnce({ id: 'user-msg-1' })
+			.mockResolvedValueOnce({ id: 'assistant-msg-1' });
+		getDifyWorkflowRuntimeMock.mockReturnValue({
+			baseUrl: 'http://localhost:5001/v1',
+			apiKey: 'app-key',
+			timeoutMs: 1000,
+			runModelLabel: 'dify-workflow:research',
+			runProviderLabel: 'dify'
+		});
+		classifyChatRouteMock.mockReturnValue('deep_research');
+		runDifyWorkflowMock.mockImplementation(async ({ onTextDelta }: { onTextDelta?: (text: string) => void }) => {
+			onTextDelta?.('## Summary\nDify research');
+			return {
+				workflowRunId: 'workflow-run-1',
+				text: '## Summary\nDify research',
+				outputs: null,
+				status: 'succeeded'
+			};
+		});
+
+		const response = await POST(
+			buildRequest({
+				chatId: 'chat-1',
+				biglotUserId: 'user-12345',
+				messages: [{ role: 'user', content: 'research this' }],
+				mode: 'coach',
+				chatMode: 'research'
+			})
+		);
+
+		const body = await response.text();
+		expect(runDifyWorkflowMock).toHaveBeenCalledTimes(1);
+		expect(runAgentLoopMock).not.toHaveBeenCalled();
+		expect(body).toContain('event: text_delta');
+		expect(body).toContain('event: research_report');
+		expect(body).toContain('"messageId":"assistant-msg-1"');
+	});
+
+	it('falls back to the legacy agent loop when Dify fails before streaming text', async () => {
+		saveChatMessageMock
+			.mockResolvedValueOnce({ id: 'user-msg-1' })
+			.mockResolvedValueOnce({ id: 'assistant-msg-1' });
+		getDifyWorkflowRuntimeMock.mockReturnValue({
+			baseUrl: 'http://localhost:5001/v1',
+			apiKey: 'app-key',
+			timeoutMs: 1000,
+			runModelLabel: 'dify-workflow:agent',
+			runProviderLabel: 'dify'
+		});
+		runDifyWorkflowMock.mockRejectedValue(new Error('dify timeout'));
+		runAgentLoopMock.mockImplementation(async ({ callbacks }: { callbacks: { onTextDelta: (text: string) => void } }) => {
+			callbacks.onTextDelta('legacy fallback');
+			return [];
+		});
+
+		const response = await POST(
+			buildRequest({
+				chatId: 'chat-1',
+				biglotUserId: 'user-12345',
+				messages: [{ role: 'user', content: 'help me' }],
+				mode: 'coach',
+				chatMode: 'agent'
+			})
+		);
+
+		const body = await response.text();
+		expect(runDifyWorkflowMock).toHaveBeenCalledTimes(1);
+		expect(runAgentLoopMock).toHaveBeenCalledTimes(1);
+		expect(body).toContain('legacy fallback');
+		expect(body).not.toContain('dify timeout');
 	});
 });

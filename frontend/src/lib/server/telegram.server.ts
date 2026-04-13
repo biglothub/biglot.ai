@@ -19,6 +19,8 @@ export type TelegramLinkRecord = {
 type TelegramSendOptions = {
     parseMode?: 'HTML' | 'MarkdownV2';
     disableWebPagePreview?: boolean;
+    replyToMessageId?: number;
+    messageThreadId?: number;
 };
 
 export type TelegramChatAction = 'typing';
@@ -64,6 +66,8 @@ export async function sendTelegramMessage(chatId: number, text: string, options:
             chat_id: chatId,
             text,
             disable_web_page_preview: options.disableWebPagePreview ?? true,
+            ...(typeof options.replyToMessageId === 'number' ? { reply_to_message_id: options.replyToMessageId } : {}),
+            ...(typeof options.messageThreadId === 'number' ? { message_thread_id: options.messageThreadId } : {}),
             ...(parseMode ? { parse_mode: parseMode } : {})
         })
     });

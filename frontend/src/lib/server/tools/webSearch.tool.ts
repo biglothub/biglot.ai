@@ -1,25 +1,9 @@
 // Web Search Tool - search the web for news, analysis, and market events
 import { registerTool, type ToolResult } from './registry';
 import { toolCache } from '../cache.server';
-import { env } from '$env/dynamic/private';
+import { getWebSearchProvider } from '../search/providers';
 
-const TAVILY_BASE = 'https://api.tavily.com';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-type TavilyResult = {
-	title: string;
-	url: string;
-	content: string;
-	raw_content?: string;
-	score: number;
-	published_date?: string;
-};
-
-type TavilyResponse = {
-	results: TavilyResult[];
-	answer?: string;
-	query: string;
-};
 
 registerTool({
 	name: 'web_search',
@@ -76,47 +60,20 @@ registerTool({
 			};
 		}
 
-		const apiKey = (env as Record<string, string | undefined>)['TAVILY_API_KEY'] ?? '';
-		if (!apiKey.trim()) {
-			return {
-				success: false,
-				contentBlocks: [{ type: 'error', message: 'Web search is not configured (missing TAVILY_API_KEY)', tool: 'web_search' }],
-				textSummary: 'Error: Web search is not configured'
-			};
-		}
-
 		const cacheKey = toolCache.generateKey('web_search', { query, searchType, maxResults, searchDepth, timeRange, includeRawContent });
 		const cached = toolCache.get<ToolResult>(cacheKey);
 		if (cached) return cached;
 
 		try {
-			const response = await fetch(`${TAVILY_BASE}/search`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					api_key: apiKey,
-					query,
-					search_depth: searchDepth,
-					topic: searchType === 'news' ? 'news' : 'general',
-					max_results: maxResults,
-					include_answer: searchDepth === 'advanced' ? 'advanced' : true,
-					include_raw_content: includeRawContent ? 'markdown' : false,
-					...(timeRange ? { time_range: timeRange } : {})
-				})
+			const provider = getWebSearchProvider();
+			const data = await provider.search({
+				query,
+				searchType: searchType === 'news' ? 'news' : 'general',
+				maxResults,
+				searchDepth,
+				timeRange: timeRange as 'd' | 'w' | 'm' | 'y' | undefined,
+				includeRawContent
 			});
-
-			if (!response.ok) {
-				const errorText = await response.text().catch(() => 'Unknown error');
-				return {
-					success: false,
-					contentBlocks: [{ type: 'error', message: `Web search failed: ${response.status} ${errorText}`, tool: 'web_search' }],
-					textSummary: `Error: Web search failed (${response.status})`
-				};
-			}
-
-			const data = (await response.json()) as TavilyResponse;
 			const results = data.results || [];
 
 			if (results.length === 0) {
@@ -137,15 +94,15 @@ registerTool({
 							items: results.map((r) => ({
 								title: r.title,
 								url: r.url,
-								source: extractDomain(r.url),
-								publishedAt: r.published_date || new Date().toISOString(),
+								source: r.source,
+								publishedAt: r.publishedAt || new Date().toISOString(),
 								sentiment: undefined
 							}))
 						}
 					],
 					textSummary: buildTextSummary(query, results, data.answer),
 					sources: results.map((r) => ({
-						name: extractDomain(r.url),
+						name: r.source,
 						url: r.url,
 						accessedAt: Date.now()
 					}))
@@ -164,14 +121,14 @@ registerTool({
 						headers: ['Title', 'Source', 'Snippet'],
 						rows: results.map((r) => [
 							r.title,
-							extractDomain(r.url),
-							truncate(r.content, 150)
+							r.source,
+							truncate(r.snippet, 150)
 						])
 					}
 				],
 				textSummary: buildTextSummary(query, results, data.answer),
 				sources: results.map((r) => ({
-					name: extractDomain(r.url),
+					name: r.source,
 					url: r.url,
 					accessedAt: Date.now()
 				}))
@@ -204,7 +161,11 @@ function truncate(text: string, maxLen: number): string {
 	return text.slice(0, maxLen).trimEnd() + '...';
 }
 
-function buildTextSummary(query: string, results: TavilyResult[], answer?: string): string {
+function buildTextSummary(
+	query: string,
+	results: Array<{ title: string; url: string; snippet: string; rawContent?: string; source: string }>,
+	answer?: string
+): string {
 	const lines: string[] = [];
 
 	if (answer) {
@@ -214,11 +175,11 @@ function buildTextSummary(query: string, results: TavilyResult[], answer?: strin
 
 	lines.push(`Found ${results.length} results:`);
 	for (const r of results) {
-		if (r.raw_content) {
-			lines.push(`\n--- ${r.title} (${extractDomain(r.url)}) ---`);
-			lines.push(truncate(r.raw_content, 2000));
+		if (r.rawContent) {
+			lines.push(`\n--- ${r.title} (${r.source}) ---`);
+			lines.push(truncate(r.rawContent, 2000));
 		} else {
-			lines.push(`- ${r.title} (${extractDomain(r.url)}): ${truncate(r.content, 200)}`);
+			lines.push(`- ${r.title} (${r.source}): ${truncate(r.snippet, 200)}`);
 		}
 	}
 

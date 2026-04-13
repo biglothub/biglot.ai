@@ -34,6 +34,7 @@ export type PersistedMessageInput = {
 	channel?: string;
 	runId?: string | null;
 	contentBlocks?: unknown;
+	externalMessageId?: string;
 };
 
 type ChatAccessResult =
@@ -208,6 +209,29 @@ export async function getChatMessages(input: {
 	return (result.data ?? []) as StoredMessageRow[];
 }
 
+export async function getRecentChatMessages(input: {
+	chatId: string;
+	limit?: number;
+}): Promise<StoredMessageRow[]> {
+	const supabase = getSupabaseAdminClient();
+	let result = await supabase
+		.from('messages')
+		.select('*')
+		.eq('chat_id', input.chatId)
+		.order('created_at', { ascending: false })
+		.limit(input.limit ?? 30);
+
+	if (result.error && hasMissingColumn(result.error, 'created_at')) {
+		result = await supabase.from('messages').select('*').eq('chat_id', input.chatId).limit(input.limit ?? 30);
+	}
+
+	if (result.error) {
+		throw new Error(getErrorMessage(result.error));
+	}
+
+	return [...((result.data ?? []) as StoredMessageRow[])].reverse();
+}
+
 export async function deleteChatRecord(input: {
 	chatId: string;
 	biglotUserId: string;
@@ -249,11 +273,17 @@ export async function saveChatMessage(input: PersistedMessageInput): Promise<{ i
 	if (input.mode) payload.mode = input.mode;
 	if (input.runId) payload.run_id = input.runId;
 	if (input.contentBlocks) payload.content_blocks = input.contentBlocks;
+	if (input.externalMessageId) payload.external_message_id = input.externalMessageId;
 
 	for (let attempt = 0; attempt < 6; attempt += 1) {
 		const result = await supabase.from('messages').insert(payload).select('id').single();
 		if (!result.error) {
 			return { id: typeof result.data?.id === 'string' ? result.data.id : undefined };
+		}
+
+		const errorMessage = getErrorMessage(result.error);
+		if (/duplicate key/i.test(errorMessage) && /external_message_id/i.test(errorMessage)) {
+			return {};
 		}
 
 		if (hasMissingColumn(result.error, 'image_url')) {
@@ -278,6 +308,10 @@ export async function saveChatMessage(input: PersistedMessageInput): Promise<{ i
 		}
 		if (hasMissingColumn(result.error, 'content_blocks')) {
 			delete payload.content_blocks;
+			continue;
+		}
+		if (hasMissingColumn(result.error, 'external_message_id')) {
+			delete payload.external_message_id;
 			continue;
 		}
 
