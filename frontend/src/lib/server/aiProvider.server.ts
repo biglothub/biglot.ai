@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { env } from '$env/dynamic/private';
+import { observeOpenAIClient } from './langfuse.server';
 
 export type AIProvider = 'openai' | 'deepseek' | 'anthropic' | 'google' | 'minimax';
 export type AIModel =
@@ -149,8 +150,14 @@ export function getClientForModel(model: AIModel): {
         clientOpts.baseURL = providerCfg.baseURL;
     }
 
+    const client = observeOpenAIClient(new OpenAI(clientOpts), {
+        provider: config.provider,
+        apiModel: config.apiModel,
+        baseURL: providerCfg.baseURL
+    });
+
     return {
-        client: new OpenAI(clientOpts),
+        client,
         apiModel: config.apiModel,
         provider: config.provider,
         supportsImageInput: config.supportsImageInput

@@ -12,6 +12,7 @@ import type {
 	DiscussionPanelistId,
 	ContentBlock
 } from '$lib/types/contentBlock';
+import { startActiveObservation } from '@langfuse/tracing';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 // --- Types ---
@@ -240,6 +241,11 @@ function buildTurnFallbackChain(panelistId: DiscussionPanelistId, primary: AIMod
 
 function getErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+function summarizeText(value: string, limit = 400): string {
+	const trimmed = value.trim();
+	return trimmed.length > limit ? `${trimmed.slice(0, limit)}...` : trimmed;
 }
 
 function shouldRetryWithFallback(error: unknown): boolean {
@@ -675,123 +681,158 @@ async function executeTurn(
 		model: pConfig.model
 	});
 
-	try {
-		const systemPrompt = buildSystemPrompt(
-			turnDef.panelistId,
-			topic,
-			turnDef.role,
-			discussionLanguage
-		);
-		const transcript = formatTranscript(completedTurns, discussionLanguage);
-
-		const messages: ChatCompletionMessageParam[] = [
-			{ role: 'system', content: systemPrompt }
-		];
-
-		// Include conversation context (last few messages for richer context)
-		const recentHistory = conversationHistory
-			.filter((m) => m.role === 'user' || m.role === 'assistant')
-			.slice(-5);
-
-		if (recentHistory.length > 0) {
-			const contextStr = recentHistory
-				.map((m) => {
-					const content = extractMessageText(m.content);
-					return `[${m.role}]: ${content}`;
-				})
-				.join('\n')
-				.slice(0, 2000);
-
-			messages.push({
-				role: 'user',
-				content: buildContextMessage(contextStr, discussionLanguage)
+	await startActiveObservation(
+		`discussion.turn.${turnDef.panelistId}`,
+		async (turnObservation) => {
+			turnObservation.update({
+				input: {
+					topic: summarizeText(topic, 300),
+					role: turnDef.role,
+					round: turnDef.round
+				},
+				metadata: {
+					discussionId,
+					turnId: turnRuntime.turnId,
+					panelistId: turnDef.panelistId,
+					model: pConfig.model,
+					language: discussionLanguage
+				}
 			});
-		}
 
-		// Add transcript of prior debate turns
-		if (transcript) {
-			messages.push({
-				role: 'user',
-				content: buildTranscriptTurnMessage(transcript, discussionLanguage)
-			});
-		}
+			try {
+				const systemPrompt = buildSystemPrompt(
+					turnDef.panelistId,
+					topic,
+					turnDef.role,
+					discussionLanguage
+				);
+				const transcript = formatTranscript(completedTurns, discussionLanguage);
 
-		const modelChain = buildTurnFallbackChain(turnDef.panelistId, pConfig.model);
-		let result: TurnExecutionResult | null = null;
+				const messages: ChatCompletionMessageParam[] = [
+					{ role: 'system', content: systemPrompt }
+				];
 
-		for (let index = 0; index < modelChain.length; index++) {
-			const model = modelChain[index];
-			const attempt = await streamTurnWithModel(
-				model,
-				messages,
-				turnDef.role,
-				pConfig.temperature,
-				callbacks,
-				turnRuntime
-			);
+				const recentHistory = conversationHistory
+					.filter((m) => m.role === 'user' || m.role === 'assistant')
+					.slice(-5);
 
-			if (attempt.ok) {
-				result = attempt;
-				break;
+				if (recentHistory.length > 0) {
+					const contextStr = recentHistory
+						.map((m) => {
+							const content = extractMessageText(m.content);
+							return `[${m.role}]: ${content}`;
+						})
+						.join('\n')
+						.slice(0, 2000);
+
+					messages.push({
+						role: 'user',
+						content: buildContextMessage(contextStr, discussionLanguage)
+					});
+				}
+
+				if (transcript) {
+					messages.push({
+						role: 'user',
+						content: buildTranscriptTurnMessage(transcript, discussionLanguage)
+					});
+				}
+
+				const modelChain = buildTurnFallbackChain(turnDef.panelistId, pConfig.model);
+				let result: TurnExecutionResult | null = null;
+
+				for (let index = 0; index < modelChain.length; index++) {
+					const model = modelChain[index];
+					const attempt = await streamTurnWithModel(
+						model,
+						messages,
+						turnDef.role,
+						pConfig.temperature,
+						callbacks,
+						turnRuntime
+					);
+
+					if (attempt.ok) {
+						result = attempt;
+						break;
+					}
+
+					const nextModel = modelChain[index + 1];
+					if (!nextModel || attempt.partialText || !shouldRetryWithFallback(attempt.error)) {
+						result = attempt;
+						break;
+					}
+
+					console.warn(
+						`[BigLot.ai] Discussion fallback for ${turnDef.panelistId}: ${model} failed (${getErrorMessage(attempt.error)}). Retrying with ${nextModel}.`
+					);
+				}
+
+				if (!result || !result.ok) {
+					throw result?.error ?? new Error('Unknown error during discussion turn');
+				}
+
+				if (result.model !== pConfig.model) {
+					pConfig.model = result.model;
+					const panelist = discussionBlock.panelists.find((entry) => entry.id === turnDef.panelistId);
+					if (panelist) panelist.model = result.model;
+				}
+
+				completedTurns.push({
+					panelistId: turnDef.panelistId,
+					round: turnDef.round,
+					content: result.text
+				});
+
+				discussionBlock.turns.push({
+					turnId: turnRuntime.turnId,
+					panelistId: turnDef.panelistId,
+					round: turnDef.round,
+					content: result.text,
+					model: result.model,
+					usage: result.usage,
+					startedAt,
+					completedAt: Date.now()
+				});
+
+				turnObservation.update({
+					output: {
+						model: result.model,
+						usage: result.usage,
+						contentPreview: summarizeText(result.text, 600)
+					}
+				});
+			} catch (err) {
+				const message = getErrorMessage(err);
+				callbacks.onError(`${PANELIST_META[turnDef.panelistId].name} error: ${message}`);
+
+				completedTurns.push({
+					panelistId: turnDef.panelistId,
+					round: turnDef.round,
+					content: `[Error: ${message}]`
+				});
+
+				discussionBlock.turns.push({
+					turnId: turnRuntime.turnId,
+					panelistId: turnDef.panelistId,
+					round: turnDef.round,
+					content: `[Error: ${message}]`,
+					model: pConfig.model,
+					startedAt,
+					completedAt: Date.now()
+				});
+
+				turnObservation.update({
+					output: {
+						error: message
+					},
+					level: 'ERROR',
+					statusMessage: message
+				});
 			}
-
-			const nextModel = modelChain[index + 1];
-			if (!nextModel || attempt.partialText || !shouldRetryWithFallback(attempt.error)) {
-				result = attempt;
-				break;
-			}
-
-			console.warn(
-				`[BigLot.ai] Discussion fallback for ${turnDef.panelistId}: ${model} failed (${getErrorMessage(attempt.error)}). Retrying with ${nextModel}.`
-			);
-		}
-
-		if (!result || !result.ok) {
-			throw result?.error ?? new Error('Unknown error during discussion turn');
-		}
-
-		if (result.model !== pConfig.model) {
-			pConfig.model = result.model;
-			const panelist = discussionBlock.panelists.find((entry) => entry.id === turnDef.panelistId);
-			if (panelist) panelist.model = result.model;
-		}
-
-		completedTurns.push({
-			panelistId: turnDef.panelistId,
-			round: turnDef.round,
-			content: result.text
-		});
-
-		discussionBlock.turns.push({
-			turnId: turnRuntime.turnId,
-			panelistId: turnDef.panelistId,
-			round: turnDef.round,
-			content: result.text,
-			model: result.model,
-			usage: result.usage,
-			startedAt,
-			completedAt: Date.now()
-		});
-	} catch (err) {
-		const message = getErrorMessage(err);
-		callbacks.onError(`${PANELIST_META[turnDef.panelistId].name} error: ${message}`);
-
-		completedTurns.push({
-			panelistId: turnDef.panelistId,
-			round: turnDef.round,
-			content: `[Error: ${message}]`
-		});
-
-		discussionBlock.turns.push({
-			turnId: turnRuntime.turnId,
-			panelistId: turnDef.panelistId,
-			round: turnDef.round,
-			content: `[Error: ${message}]`,
-			model: pConfig.model,
-			startedAt,
-			completedAt: Date.now()
-		});
-	}
+		},
+		{ asType: 'span' }
+	);
 
 	callbacks.onTurnEnd({
 		discussionId,

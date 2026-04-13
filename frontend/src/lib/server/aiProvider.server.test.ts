@@ -1,5 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env } from '$env/dynamic/private';
+
+const { observeOpenAIClientMock } = vi.hoisted(() => ({
+	observeOpenAIClientMock: vi.fn((client) => client)
+}));
+
+vi.mock('./langfuse.server', () => ({
+	observeOpenAIClient: observeOpenAIClientMock
+}));
+
 import { isAIModel, resolveDefaultAIModel, getClientForModel, getClientWithFallback, getModelConfig } from './aiProvider.server';
 
 const ENV_KEYS = [
@@ -27,6 +36,7 @@ function resetEnv() {
 
 beforeEach(() => {
 	resetEnv();
+	observeOpenAIClientMock.mockClear();
 });
 
 describe('isAIModel', () => {
@@ -131,6 +141,13 @@ describe('getClientForModel', () => {
 		expect(result.apiModel).toBe('gpt-4o');
 		expect(result.provider).toBe('openai');
 		expect(result.client).toBeDefined();
+		expect(observeOpenAIClientMock).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({
+				provider: 'openai',
+				apiModel: 'gpt-4o'
+			})
+		);
 	});
 
 	it('throws when API key is missing', () => {
